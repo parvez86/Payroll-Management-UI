@@ -1,0 +1,111 @@
+# =============================================================================
+# PAYROLL MANAGEMENT SYSTEM - ROOT LEVEL .GITIGNORE
+# =============================================================================
+# 
+# This root .gitignore handles:
+# 1. Root-level files and directories
+# 2. Common patterns that apply to the entire project
+# 3. Ensures child .gitignore files work properly for their specific needs
+#
+# Child directories have their own .gitignore files:
+# - payroll-frontend/.gitignore (handles React/Vite specific files)
+# - payroll-backend/.gitignore (handles Spring Boot/Maven specific files)
+# =============================================================================
+
+# =============================================================================
+# ROOT LEVEL FILES
+# =============================================================================
+
+# Root level dependencies (if any)
+node_modules/
+
+# Root level logs
+*.log
+logs/
+
+# Root level environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Temporary files at root
+*.tmp
+*.temp
+.temp/
+
+# Compressed files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# =============================================================================  
+# PROJECT-WIDE PATTERNS
+# =============================================================================
+
+# IDE files (project-wide)
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# OS files (project-wide)
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Security & secrets (project-wide)
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+secrets/
+credentials/
+
+# =============================================================================
+# DEPLOYMENT & INFRASTRUCTURE
+# =============================================================================
+
+# Deployment platforms
+.vercel/
+.netlify/
+heroku.yml
+
+# Docker (if at root level)
+docker-compose.override.yml
+.docker/
+
+# Documentation builds
+docs/build/
+docs/dist/
+
+# =============================================================================
+# IMPORTANT: PRESERVE CHILD .GITIGNORE FILES
+# =============================================================================
+# Each subdirectory should have its own .gitignore:
+# - payroll-frontend/.gitignore (React/Vite specific)
+# - payroll-backend/.gitignore (Spring Boot/Maven specific)
+#
+# This allows each component to manage its own ignore patterns
+# while this root file handles project-wide concerns.
+
+# Don't ignore child .gitignore files
+!*/.gitignore
+
+# Keep important project structure
+!docs/
+!*/docs/
+!*.md
+!*/README.md
+!LICENSE
