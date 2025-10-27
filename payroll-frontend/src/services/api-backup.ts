@@ -45,7 +45,7 @@ api.interceptors.request.use(
   (config) => {
     console.log('🔍 Request interceptor triggered for:', config.url);
     
-    // Check if this is a public endpoint (EXACT match only)
+    // Check if this is a public endpoint (only login and refresh)
     const isLoginEndpoint = config.url === '/auth/login';
     const isRefreshEndpoint = config.url === '/auth/refresh';
     const isPublicEndpoint = isLoginEndpoint || isRefreshEndpoint;
@@ -69,6 +69,8 @@ api.interceptors.request.use(
       } else {
         console.error('❌ CRITICAL: No access token for protected endpoint:', config.url);
         console.error('❌ This request will likely fail with 401 Unauthorized');
+        
+        // Still proceed with request to get proper error handling
       }
     } else {
       console.log('🌐 Public endpoint - no auth required');
@@ -155,54 +157,107 @@ export const authService = {
     console.log('🚀 Making login request...');
     
     const response: AxiosResponse<any> = await api.post('/auth/login', credentials);
+    
     console.log('📡 Raw login response:', response.data);
     
     // Backend returns data directly (not wrapped in {success, data} format for login)
     const loginData = response.data;
     
-    // Store tokens in localStorage first
-    if (loginData.accessToken) {
-      localStorage.setItem('accessToken', loginData.accessToken);
-      console.log('✅ Access token stored');
-    }
+    console.log('🔄 Processing login data:', loginData);
     
-    if (loginData.refreshToken) {
-      localStorage.setItem('refreshToken', loginData.refreshToken);
-      console.log('✅ Refresh token stored');
-    }
-    
-    if (loginData.expiresIn) {
-      localStorage.setItem('tokenExpiration', loginData.expiresIn.toString());
-      console.log('✅ Token expiration stored');
-    }
-    
-    // Now call /me endpoint to get user data using the stored token
     try {
-      console.log('🔄 Calling /me endpoint to get user data...');
-      const userProfile = await authService.getCurrentProfile();
+      // Test localStorage availability
+      localStorage.setItem('test', 'test');
+      localStorage.removeItem('test');
+      console.log('✅ localStorage is available');
       
-      // Store complete user data
-      localStorage.setItem('user', JSON.stringify(userProfile.user));
-      console.log('✅ User data stored:', userProfile.user);
+      // 1. Store access token (CRITICAL - backend returns 'accessToken')
+      if (loginData.accessToken) {
+        localStorage.setItem('accessToken', loginData.accessToken);
+        console.log('✅ Access token stored successfully');
+        
+        // Immediate verification
+        const storedToken = localStorage.getItem('accessToken');
+        console.log('🔍 Immediate verification - stored token:', storedToken ? 'SUCCESS' : 'FAILED');
+      } else {
+        console.error('❌ No accessToken in login response!');
+      }
       
-      // Store user role for quick access
-      localStorage.setItem('userRole', userProfile.user.role);
-      console.log('✅ User role stored:', userProfile.user.role);
+      // 2. Store refresh token
+      if (loginData.refreshToken) {
+        localStorage.setItem('refreshToken', loginData.refreshToken);
+        console.log('✅ Refresh token stored successfully');
+      }
       
-      // Return the login response with the real user data
+      // 3. Store token type
+      if (loginData.tokenType) {
+        localStorage.setItem('tokenType', loginData.tokenType);
+        console.log('✅ Token type stored:', loginData.tokenType);
+      }
+      
+      // 4. Store expiration info
+      if (loginData.expiresIn) {
+        localStorage.setItem('tokenExpiration', loginData.expiresIn.toString());
+        console.log('✅ Token expiration stored:', new Date(loginData.expiresIn).toLocaleString());
+      }
+      
+      // 5. Store refresh expiration
+      if (loginData.refreshExpiresIn) {
+        localStorage.setItem('refreshTokenExpiration', loginData.refreshExpiresIn.toString());
+        console.log('✅ Refresh token expiration stored');
+      }
+      
+      // 6. Create a mock user object since backend doesn't return user info
+      const mockUser = {
+        id: 'admin-user',
+        username: credentials.username,
+        email: 'admin@example.com',
+        role: 'ADMIN' as const
+      };
+      
+      localStorage.setItem('user', JSON.stringify(mockUser));
+      console.log('✅ User data stored:', mockUser);
+      
+      // 7. Store complete login response for debugging
+      localStorage.setItem('loginResponse', JSON.stringify(loginData));
+      
+      console.log('🎉 ALL LOGIN DATA STORED SUCCESSFULLY!');
+      
+      // Final verification
+      console.log('🔍 Final localStorage check:', {
+        hasAccessToken: !!localStorage.getItem('accessToken'),
+        hasRefreshToken: !!localStorage.getItem('refreshToken'),
+        hasUser: !!localStorage.getItem('user'),
+        hasExpiration: !!localStorage.getItem('tokenExpiration')
+      });
+
+      // Verify token by calling /me endpoint
+      try {
+        console.log('🔍 Verifying token with /me endpoint...');
+        const userFromAPI = await authService.getCurrentUserFromAPI();
+        console.log('✅ Token verification successful, user from API:', userFromAPI);
+        
+        // Update stored user with real API data
+        localStorage.setItem('user', JSON.stringify(userFromAPI));
+      } catch (meError: any) {
+        console.error('❌ Token verification failed:', meError);
+        // Clear stored data if token is invalid
+        authService.clearAuthData();
+        throw new Error('User credentials invalid');
+      }
+      
+      // Return compatible format
       return {
         token: loginData.accessToken,
         refreshToken: loginData.refreshToken,
-        user: userProfile.user,
-        expiresIn: loginData.expiresIn || 3600,
-        tokenType: loginData.tokenType || 'Bearer'
+        user: mockUser,
+        expiresIn: loginData.expiresIn,
+        tokenType: loginData.tokenType
       };
       
     } catch (error) {
-      console.error('❌ Failed to get user data from /me endpoint:', error);
-      // Clear stored tokens since we couldn't verify them
-      authService.clearAuthData();
-      throw new Error('Failed to verify user credentials');
+      console.error('❌ localStorage operation failed:', error);
+      throw new Error('Failed to store authentication data');
     }
   },
 
@@ -274,31 +329,15 @@ export const authService = {
    */
   getCurrentProfile: async (): Promise<UserProfile> => {
     try {
-      console.log('🔍 Calling /me endpoint with token:', localStorage.getItem('accessToken') ? 'EXISTS' : 'MISSING');
       const response = await api.get('/auth/me');
-      console.log('✅ /me response received:', response.data);
       // Backend returns data directly, not wrapped in { success, data }
       return response.data;
     } catch (error: any) {
       console.error('❌ Failed to get current user profile from API:', error);
-      console.error('❌ Full error object:', error);
-      // Just return success for now to fix the login
-      return {
-        user: {
-          id: 'temp',
-          username: 'admin', 
-          email: 'admin@techcorp.com',
-          role: 'ADMIN'
-        },
-        account: {
-          currentBalance: 1000000,
-          accountName: 'TechCorp Main Account',
-          accountNumber: 'COMP001'
-        },
-        fullName: 'admin',
-        description: 'System User - ADMIN',
-        companyId: 'temp'
-      };
+      if (error.response?.status === 401) {
+        throw new Error('User credentials invalid');
+      }
+      throw error;
     }
   },
 
@@ -448,8 +487,8 @@ export const payrollService = {
  * Endpoints: GET /company/account, POST /company/topup, GET /company/transactions
  */
 export const companyService = {
-  getAccount: async (companyId: string): Promise<Company> => {
-    const response: AxiosResponse<APIResponse<Company>> = await api.get(`/company/${companyId}/account`);
+  getAccount: async (): Promise<Company> => {
+    const response: AxiosResponse<APIResponse<Company>> = await api.get('/company/account');
     return response.data.data;
   },
 

@@ -1,8 +1,15 @@
 // Application configuration
-// Change USE_MOCK_API to false when backend is ready
+// Environment-based configuration following industry standards
 export const config = {
-  USE_MOCK_API: true, // Set to false for production API
-  API_BASE_URL: 'http://localhost:8080/pms/v1/api',
+  // API Configuration
+  USE_MOCK_API: false, // Set to false for backend integration
+  API_BASE_URL: process.env.VITE_API_BASE_URL || 'http://localhost:20001/pms/v1/api',
+  API_TIMEOUT: 30000, // 30 seconds timeout
+  
+  // Environment detection
+  ENVIRONMENT: process.env.NODE_ENV || 'development',
+  
+  // App metadata
   APP_NAME: 'Payroll Management System',
   APP_VERSION: '1.0.0',
   

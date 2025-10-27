@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import './InterviewApp.css';
+import './SimulatedApp.css';
 import { LogOut, DollarSign, PlusCircle } from './icons';
 
 // Initial employee data matching the old project exactly

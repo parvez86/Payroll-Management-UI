@@ -3,11 +3,40 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    react({
-      babel: {
-        plugins: [['babel-plugin-react-compiler']],
+  plugins: [react()],
+  server: {
+    port: 3000,
+    host: true, // Allow external connections
+    cors: true,
+    proxy: {
+      // Proxy API calls to backend to avoid CORS issues in development
+      '/pms/v1/api': {
+        target: 'http://localhost:20001',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('Proxy error:', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log(`Proxying request: ${req.method} ${req.url} -> ${proxyReq.protocol}//${proxyReq.host}${proxyReq.path}`);
+          });
+        },
       },
-    }),
-  ],
+    },
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'axios'],
+        },
+      },
+    },
+  },
+  define: {
+    __DEV__: JSON.stringify(process.env.NODE_ENV === 'development'),
+  },
 })

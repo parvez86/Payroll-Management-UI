@@ -62,7 +62,7 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   const loadCompanyAccount = async () => {
     dispatch({ type: 'LOAD_START' });
     try {
-      const company = await companyService.getAccount();
+      const company = await companyService.getAccount("fc6d6c2f-8f00-4243-9a32-39b9dc615cff");
       dispatch({ type: 'LOAD_COMPANY_SUCCESS', payload: company });
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to load company account';
@@ -74,7 +74,7 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const transaction = await companyService.topUp(request);
       // Reload company account to get updated balance
-      const company = await companyService.getAccount();
+      const company = await companyService.getAccount("fc6d6c2f-8f00-4243-9a32-39b9dc615cff");
       dispatch({ type: 'TOP_UP_SUCCESS', payload: { company, transaction } });
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to top up account';
