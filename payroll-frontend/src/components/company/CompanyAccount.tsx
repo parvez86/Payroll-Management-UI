@@ -80,24 +80,24 @@ const CompanyAccount: React.FC = () => {
               </div>
             </div>
             
-            <div className="account-info-grid">
-              <div className="info-item">
-                <label>Account Number</label>
-                <span>{company?.account?.accountNumber || 'N/A'}</span>
+              <div className="account-info-grid">
+                <div className="info-item">
+                  <label>Account Number</label>
+                  <span>{company?.accountNumber || 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <label>Account Name</label>
+                  <span>{company?.accountName || 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <label>Bank</label>
+                  <span>{company?.bank || 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <label>Branch</label>
+                  <span>{company?.branch || 'N/A'}</span>
+                </div>
               </div>
-              <div className="info-item">
-                <label>Account Type</label>
-                <span>{company?.account?.accountType || 'N/A'}</span>
-              </div>
-              <div className="info-item">
-                <label>Bank</label>
-                <span>{company?.account?.bankName || 'N/A'}</span>
-              </div>
-              <div className="info-item">
-                <label>Branch</label>
-                <span>{company?.account?.branchName || 'N/A'}</span>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -143,25 +143,25 @@ const CompanyAccount: React.FC = () => {
               <tbody>
                 {transactions.map(transaction => (
                   <tr key={transaction.id}>
-                    <td>{new Date(transaction.requestedAt).toLocaleDateString()}</td>
+                    <td>{new Date(transaction.timestamp || transaction.requestedAt || transaction.createdAt || Date.now()).toLocaleDateString()}</td>
                     <td>
-                      <span className={`transaction-type ${transaction.type.toLowerCase().replace('_', '-')}`}>
-                        {transaction.type === 'PAYROLL_DISBURSEMENT' ? 'Payroll' : 'Top-up'}
+                      <span className={`transaction-type ${String(transaction.type).toLowerCase().replace('_', '-')}`}>
+                        {transaction.type === 'PAYROLL_DISBURSEMENT' || transaction.type === 'SALARY_TRANSFER' ? 'Payroll' : 'Top-up'}
                       </span>
                     </td>
                     <td>
-                      <span className={transaction.type === 'PAYROLL_DISBURSEMENT' ? 'debit' : 'credit'}>
-                        {transaction.type === 'PAYROLL_DISBURSEMENT' ? '-' : '+'}
+                      <span className={transaction.type === 'PAYROLL_DISBURSEMENT' || transaction.type === 'SALARY_TRANSFER' ? 'debit' : 'credit'}>
+                        {transaction.type === 'PAYROLL_DISBURSEMENT' || transaction.type === 'SALARY_TRANSFER' ? '-' : '+'}
                         {formatCurrency(transaction.amount)}
                       </span>
                     </td>
                     <td>
-                      <span className={`status-badge ${transaction.status.toLowerCase()}`}>
-                        {transaction.status}
+                      <span className={`status-badge ${String(transaction.status || 'SUCCESS').toLowerCase()}`}>
+                        {transaction.status || 'SUCCESS'}
                       </span>
                     </td>
                     <td>
-                      {transaction.type === 'PAYROLL_DISBURSEMENT' 
+                      {transaction.type === 'PAYROLL_DISBURSEMENT' || transaction.type === 'SALARY_TRANSFER'
                         ? 'Employee salary disbursement' 
                         : 'Account top-up'
                       }

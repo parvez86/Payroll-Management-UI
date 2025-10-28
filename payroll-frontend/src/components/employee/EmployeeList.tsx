@@ -5,6 +5,10 @@ import EmployeeForm from './EmployeeForm';
 import type { Employee } from '../../types';
 
 const EmployeeList: React.FC = () => {
+  // Debug logs to diagnose empty list issue
+  console.log('EmployeeList: employees from context', employees);
+  // filteredEmployees is defined below
+  console.log('EmployeeList: filteredEmployees', filteredEmployees);
   const { employees, isLoading, error, deleteEmployee } = useEmployees();
   const [showForm, setShowForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
@@ -21,7 +25,7 @@ const EmployeeList: React.FC = () => {
   };
 
   const handleDelete = async (employee: Employee) => {
-    if (window.confirm(`Are you sure you want to delete employee ${employee.name} (${employee.bizId})?`)) {
+    if (window.confirm(`Are you sure you want to delete employee ${employee.name} (${employee.code})?`)) {
       try {
         await deleteEmployee(employee.id);
       } catch (error) {
@@ -39,11 +43,9 @@ const EmployeeList: React.FC = () => {
   const filteredEmployees = employees.filter(emp => {
     const matchesSearch = searchTerm === '' || 
       emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.bizId.includes(searchTerm) ||
+      emp.code.includes(searchTerm) ||
       emp.mobile.includes(searchTerm);
-    
-    const matchesGrade = filterGrade === '' || emp.grade === filterGrade;
-    
+    const matchesGrade = filterGrade === '' || emp.grade.rank === filterGrade;
     return matchesSearch && matchesGrade;
   });
 
@@ -52,10 +54,11 @@ const EmployeeList: React.FC = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedEmployees = filteredEmployees.slice(startIndex, startIndex + itemsPerPage);
 
-  // Group employees by grade for distribution summary
+  // Group employees by grade.rank for distribution summary
   const employeesByGrade = employees.reduce((acc, emp) => {
-    if (!acc[emp.grade]) acc[emp.grade] = [];
-    acc[emp.grade].push(emp);
+    const gradeRank = emp.grade.rank;
+    if (!acc[gradeRank]) acc[gradeRank] = [];
+    acc[gradeRank].push(emp);
     return acc;
   }, {} as Record<number, Employee[]>);
 
@@ -137,7 +140,7 @@ const EmployeeList: React.FC = () => {
           <p><strong>Total Employees:</strong> {employees.length} / 10</p>
           <p><strong>Showing:</strong> {filteredEmployees.length} employees</p>
           <p><strong>Total Monthly Payroll:</strong> {formatCurrency(employees.reduce((total, emp) => {
-            const salary = calculateSalary(emp.grade, baseSalaryGrade6);
+            const salary = calculateSalary(emp.grade.rank, baseSalaryGrade6);
             return total + salary.gross;
           }, 0))}</p>
         </div>
@@ -150,16 +153,16 @@ const EmployeeList: React.FC = () => {
             <div className="no-data">No employees found</div>
           ) : (
             paginatedEmployees.map(employee => {
-              const salary = calculateSalary(employee.grade, baseSalaryGrade6);
+              const salary = calculateSalary(employee.grade.rank, baseSalaryGrade6);
               return (
                 <div key={employee.id} className="employee-card">
                   <div className="card-header">
                     <div className="employee-info">
                       <h4>{employee.name}</h4>
-                      <span className="employee-id">{employee.bizId}</span>
+                      <span className="employee-id">{employee.code}</span>
                     </div>
-                    <span className={`grade-badge grade-${employee.grade}`}>
-                      Grade {employee.grade}
+                    <span className={`grade-badge grade-${employee.grade.rank}`}>
+                      {employee.grade.name}
                     </span>
                   </div>
                   <div className="card-body">
@@ -183,7 +186,7 @@ const EmployeeList: React.FC = () => {
                     </div>
                     <div className="account-info">
                       <div>🏦 {employee.account.accountNumber}</div>
-                      <small>{employee.account.bankName}</small>
+                      <small>{employee.account.branchName}</small>
                     </div>
                   </div>
                   <div className="card-actions">
@@ -229,12 +232,12 @@ const EmployeeList: React.FC = () => {
                 </tr>
               ) : (
                 paginatedEmployees
-                  .sort((a, b) => a.grade - b.grade || a.bizId.localeCompare(b.bizId))
+                  .sort((a, b) => a.grade.rank - b.grade.rank || a.code.localeCompare(b.code))
                   .map(employee => {
-                    const salary = calculateSalary(employee.grade, baseSalaryGrade6);
+                    const salary = calculateSalary(employee.grade.rank, baseSalaryGrade6);
                     return (
                       <tr key={employee.id}>
-                        <td className="employee-id">{employee.bizId}</td>
+                        <td className="employee-id">{employee.code}</td>
                         <td>
                           <div className="employee-info">
                             <strong>{employee.name}</strong>
@@ -242,8 +245,8 @@ const EmployeeList: React.FC = () => {
                           </div>
                         </td>
                         <td>
-                          <span className={`grade-badge grade-${employee.grade}`}>
-                            Grade {employee.grade}
+                          <span className={`grade-badge grade-${employee.grade.rank}`}>
+                            {employee.grade.name}
                           </span>
                         </td>
                         <td>{employee.mobile}</td>
@@ -254,7 +257,7 @@ const EmployeeList: React.FC = () => {
                         <td>
                           <div className="account-info">
                             <div>{employee.account.accountNumber}</div>
-                            <small>{employee.account.bankName}</small>
+                            <small>{employee.account.branchName}</small>
                           </div>
                         </td>
                         <td>
@@ -318,7 +321,7 @@ const EmployeeList: React.FC = () => {
               <p>{employeesByGrade[grade]?.length || 0} / {grade === 1 || grade === 2 ? 1 : 2}</p>
               {employeesByGrade[grade]?.map(emp => (
                 <div key={emp.id} className="employee-chip">
-                  {emp.name} ({emp.bizId})
+                  {emp.name} ({emp.code})
                 </div>
               ))}
             </div>

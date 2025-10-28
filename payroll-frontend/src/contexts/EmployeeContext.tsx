@@ -11,7 +11,7 @@ interface EmployeeState {
 
 interface EmployeeContextType extends EmployeeState {
   loadEmployees: () => Promise<void>;
-  addEmployee: (employee: Omit<Employee, 'id' | 'account'>) => Promise<void>;
+  addEmployee: (employee: Omit<Employee, 'id'>) => Promise<void>;
   updateEmployee: (id: string, employee: Partial<Employee>) => Promise<void>;
   deleteEmployee: (id: string) => Promise<void>;
   validateNewEmployee: (employee: { bizId: string; grade: number }, isUpdate?: boolean, currentEmployee?: Employee) => string | null;
@@ -78,9 +78,9 @@ export const EmployeeProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
-  const addEmployee = async (employee: Omit<Employee, 'id' | 'account'>) => {
+  const addEmployee = async (employee: Omit<Employee, 'id'>) => {
     try {
-      const newEmployee = await employeeService.create(employee);
+      const newEmployee = await employeeService.create(employee as any);
       dispatch({ type: 'ADD_EMPLOYEE', payload: newEmployee });
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to add employee';
@@ -112,8 +112,8 @@ export const EmployeeProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const validateNewEmployee = (
-    employee: { bizId: string; grade: number }, 
-    isUpdate = false, 
+    employee: { bizId: string; grade: number },
+    isUpdate = false,
     currentEmployee?: Employee
   ): string | null => {
     // Validate employee ID format
@@ -121,18 +121,19 @@ export const EmployeeProvider: React.FC<{ children: ReactNode }> = ({ children }
       return 'Employee ID must be exactly 4 digits';
     }
 
-    // Check ID uniqueness
-    const isDuplicate = state.employees.some(emp => 
-      emp.bizId === employee.bizId && 
+    // Check ID uniqueness (use code)
+    const isDuplicate = state.employees.some(emp =>
+      emp.code === employee.bizId &&
       (!isUpdate || emp.id !== currentEmployee?.id)
     );
     if (isDuplicate) {
       return 'Employee ID must be unique';
     }
 
-    // Validate grade distribution
-    const currentGrade = isUpdate ? currentEmployee?.grade : undefined;
-    if (!validateGradeDistribution(state.employees, employee.grade, isUpdate, currentGrade)) {
+    // Validate grade distribution (use grade.rank)
+    const employeesForValidation = state.employees.map(e => ({ grade: e.grade.rank }));
+    const currentGrade = isUpdate ? currentEmployee?.grade.rank : undefined;
+    if (!validateGradeDistribution(employeesForValidation, employee.grade, isUpdate, currentGrade)) {
       return `Grade ${employee.grade} has reached its maximum limit`;
     }
 

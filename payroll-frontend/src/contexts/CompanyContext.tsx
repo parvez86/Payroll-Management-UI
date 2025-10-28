@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
 import { companyService } from '../services/api';
-import type { Company, Transaction, TopUpRequest } from '../types';
+import type { Company, Transaction, TopUpRequest, BackendCompany, TransactionHistoryResponse, TopUpResponse } from '../types';
 
 interface CompanyState {
   company: Company | null;
@@ -62,7 +62,16 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   const loadCompanyAccount = async () => {
     dispatch({ type: 'LOAD_START' });
     try {
-      const company = await companyService.getAccount("fc6d6c2f-8f00-4243-9a32-39b9dc615cff");
+      const companyRaw: BackendCompany = await companyService.getAccount("fc6d6c2f-8f00-4243-9a32-39b9dc615cff");
+      // Flatten mainAccount fields to top-level for UI compatibility
+      const company: Company = {
+        accountNumber: companyRaw.mainAccount.accountNumber,
+        accountName: companyRaw.mainAccount.accountName,
+        currentBalance: companyRaw.mainAccount.currentBalance,
+        bank: companyRaw.mainAccount.branchName,
+        branch: companyRaw.mainAccount.branchName,
+        lastUpdated: companyRaw.mainAccount.createdAt,
+      };
       dispatch({ type: 'LOAD_COMPANY_SUCCESS', payload: company });
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to load company account';
@@ -72,9 +81,26 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const topUpAccount = async (request: TopUpRequest) => {
     try {
-      const transaction = await companyService.topUp(request);
+      const topUpResponse: TopUpResponse = await companyService.topUp(request);
       // Reload company account to get updated balance
-      const company = await companyService.getAccount("fc6d6c2f-8f00-4243-9a32-39b9dc615cff");
+      const companyRaw: BackendCompany = await companyService.getAccount("fc6d6c2f-8f00-4243-9a32-39b9dc615cff");
+      const company: Company = {
+        accountNumber: companyRaw.mainAccount.accountNumber,
+        accountName: companyRaw.mainAccount.accountName,
+        currentBalance: companyRaw.mainAccount.currentBalance,
+        bank: companyRaw.mainAccount.branchName,
+        branch: companyRaw.mainAccount.branchName,
+        lastUpdated: companyRaw.mainAccount.createdAt,
+      };
+      // Synthesize a Transaction from TopUpResponse for UI
+      const transaction: Transaction = {
+        id: topUpResponse.transactionId,
+        type: 'TOPUP',
+        amount: topUpResponse.topupAmount,
+        description: 'Account top-up',
+        balanceAfter: topUpResponse.newBalance,
+        timestamp: topUpResponse.timestamp,
+      };
       dispatch({ type: 'TOP_UP_SUCCESS', payload: { company, transaction } });
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to top up account';
@@ -86,8 +112,8 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   const loadTransactions = async () => {
     dispatch({ type: 'LOAD_START' });
     try {
-      const transactions = await companyService.getTransactions();
-      dispatch({ type: 'LOAD_TRANSACTIONS_SUCCESS', payload: transactions });
+      const txResp: TransactionHistoryResponse = await companyService.getTransactions();
+      dispatch({ type: 'LOAD_TRANSACTIONS_SUCCESS', payload: txResp.transactions });
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to load transactions';
       dispatch({ type: 'LOAD_FAILURE', payload: message });

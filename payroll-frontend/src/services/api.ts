@@ -392,9 +392,17 @@ export const authService = {
  * Employee Management Service - Paginated API
  */
 export const employeeService = {
-  getAll: async (page: number = 0, size: number = 20, sort: string = 'grade.rank'): Promise<{content: Employee[], totalElements: number, totalPages: number, first: boolean, last: boolean}> => {
-    const response: AxiosResponse<APIResponse<{content: Employee[], totalElements: number, totalPages: number, first: boolean, last: boolean}>> = await api.get(`/employees?page=${page}&size=${size}&sort=${sort}`);
-    return response.data.data || response.data; // Handle both wrapped and direct response
+  getAll: async (page: number = 0, size: number = 50, sort: string = 'grade.rank'): Promise<Employee[]> => {
+    const response: AxiosResponse<any> = await api.get(`/employees?page=${page}&size=${size}&sort=${sort}`);
+    // Debug log the raw response for troubleshooting
+    console.log('employeeService.getAll raw response:', response.data);
+    // Try all possible shapes
+    if (Array.isArray(response.data)) return response.data;
+    if (Array.isArray(response.data.data)) return response.data.data;
+    if (Array.isArray(response.data.content)) return response.data.content;
+    if (response.data.data && Array.isArray(response.data.data.content)) return response.data.data.content;
+    // Fallback: return empty array
+    return [];
   },
 
   getById: async (id: string): Promise<Employee> => {
@@ -448,8 +456,8 @@ export const payrollService = {
  * Endpoints: GET /company/account, POST /company/topup, GET /company/transactions
  */
 export const companyService = {
-  getAccount: async (companyId: string): Promise<Company> => {
-    const response: AxiosResponse<APIResponse<Company>> = await api.get(`/company/${companyId}/account`);
+  getAccount: async (companyId: string): Promise<import('../types').BackendCompany> => {
+    const response: AxiosResponse<APIResponse<import('../types').BackendCompany>> = await api.get(`/companies/${companyId}`);
     return response.data.data;
   },
 

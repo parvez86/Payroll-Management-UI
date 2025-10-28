@@ -1,3 +1,27 @@
+// Backend company type for API response
+export interface BackendCompany {
+  id: string;
+  name: string;
+  description: string;
+  salaryFormulaId: string;
+  mainAccount: {
+    id: string;
+    ownerType: string;
+    ownerId: string;
+    accountType: string;
+    accountName: string;
+    accountNumber: string;
+    currentBalance: number;
+    overdraftLimit: number;
+    branchId: string;
+    branchName: string;
+    status: string;
+    createdAt: string;
+    createdBy: any;
+  };
+  createdAt: string;
+  createdBy: any;
+}
 // Core business entities matching development.md domain model
 
 export interface User {

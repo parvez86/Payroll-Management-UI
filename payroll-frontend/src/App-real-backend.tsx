@@ -1,38 +1,30 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import './SimulatedApp.css';
-import { LogOut, DollarSign, PlusCircle } from './icons';
-import { authService, employeeService, companyService, payrollService } from './services/api';
-import type { Employee, Company, LoginRequest } from './types';
-
-// Business logic constants from original design
-const GRADE_LEVELS = [6, 5, 4, 3, 2, 1]; // From lowest to highest grade
-
-// Utility functions (exact same as original)
-const formatCurrency = (amount: number) => new Intl.NumberFormat('en-BD', {
-  style: 'currency',
-  currency: 'BDT',
-  minimumFractionDigits: 0,
-}).format(amount);
-
-const calculateBasicSalary = (grade: number, grade6Basic: number) => {
-  if (grade < 1 || grade > 6) return 0;
-  return grade6Basic + (6 - grade) * 5000;
-};
-
-const calculateTotalSalary = (basic: number) => {
-  const houseRent = basic * 0.20; // 20%
-  const medicalAllowance = basic * 0.15; // 15%
-  const gross = basic + houseRent + medicalAllowance;
+// Helper to map Employee to EmployeeDisplay
+function toEmployeeDisplay(emp: Employee): EmployeeDisplay {
+  // Map backend EmployeeSalary to SalaryDetails, ensuring isPaid is always boolean
+  let salary: SalaryDetails | null = null;
+  if (emp.salary) {
+    salary = {
+      basic: emp.salary.basic,
+      houseRent: emp.salary.houseRent,
+      medicalAllowance: emp.salary.medicalAllowance,
+      gross: emp.salary.gross,
+      isPaid: typeof emp.salary.isPaid === 'boolean' ? emp.salary.isPaid : false,
+    };
+  }
   return {
-    basic: basic,
-    houseRent: houseRent,
-    medicalAllowance: medicalAllowance,
-    gross: Math.round(gross),
-    isPaid: false,
+    ...emp,
+    bankAccount: {
+      type: emp.account?.accountType || '',
+      name: emp.account?.accountName || '',
+      number: emp.account?.accountNumber || '',
+      balance: emp.account?.currentBalance || 0,
+      bank: '', // Add if available in backend
+      branch: emp.account?.branchName || '',
+    },
+    salary,
   };
-};
-
-// Types (matching original exactly)
+}
+// Types for UI mapping (restored)
 interface BankAccount {
   type: string;
   name: string;
@@ -54,9 +46,30 @@ interface EmployeeDisplay extends Employee {
   salary?: SalaryDetails | null;
   bankAccount: BankAccount;
 }
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import './SimulatedApp.css';
+import { LogOut, DollarSign, PlusCircle } from './icons';
+import { authService, employeeService, companyService, payrollService } from './services/api';
+import type { Employee } from './types';
+
+// Business logic constants from original design
+const GRADE_LEVELS = [6, 5, 4, 3, 2, 1]; // From lowest to highest grade
+
+// Utility functions (exact same as original)
+const formatCurrency = (amount: number) => new Intl.NumberFormat('en-BD', {
+  style: 'currency',
+  currency: 'BDT',
+  minimumFractionDigits: 0,
+}).format(amount);
+
+//
+
+//
+
+// No need for custom BankAccount or EmployeeDisplay; use backend Employee type
 
 // Salary Sheet Component (exact same UI)
-const SalarySheet: React.FC<{ employees: EmployeeDisplay[], totalPaid: number, companyBalance: number }> = ({ employees, totalPaid, companyBalance }) => {
+const SalarySheet: React.FC<{ employees: Employee[], totalPaid: number, companyBalance: number }> = ({ employees, totalPaid, companyBalance }) => {
   return (
     <div className="content-card">
       <h2 className="page-title">
@@ -93,7 +106,7 @@ const SalarySheet: React.FC<{ employees: EmployeeDisplay[], totalPaid: number, c
                 <td className="table-cell">
                   <div className="employee-info">
                     <div className="employee-name">{emp.name}</div>
-                    <div className="employee-id">ID: {emp.id}</div>
+                    <div className="employee-id">ID: {emp.code}</div>
                   </div>
                 </td>
                 <td className="table-cell text-center">
@@ -121,8 +134,8 @@ const SalarySheet: React.FC<{ employees: EmployeeDisplay[], totalPaid: number, c
 
 // Employee Table Component (exact same UI)
 const EmployeeTable: React.FC<{ 
-  employees: EmployeeDisplay[], 
-  onEdit: (emp: EmployeeDisplay) => void, 
+  employees: Employee[], 
+  onEdit: (emp: Employee) => void, 
   onDelete: (id: string) => void,
   onSort: (key: string) => void,
   sortConfig: {key: string, direction: 'asc' | 'desc'} | null,
@@ -161,7 +174,7 @@ const EmployeeTable: React.FC<{
               <td className="table-cell">
                 <div className="employee-info">
                   <div className="employee-name">{emp.name}</div>
-                  <div className="employee-id">ID: {emp.id}</div>
+                  <div className="employee-id">ID: {emp.code}</div>
                 </div>
               </td>
               <td className="table-cell text-center">
@@ -175,14 +188,14 @@ const EmployeeTable: React.FC<{
               </td>
               <td className="table-cell">
                 <div className="bank-info">
-                  <span className="bank-name">{emp.bankAccount.name}</span>
+                  <span className="bank-name">{emp.account.accountName}</span>
                   <div className="bank-details">
-                    {emp.bankAccount.number} ({emp.bankAccount.bank})
+                    {emp.account.accountNumber} ({emp.account.branchName})
                   </div>
                 </div>
               </td>
               <td className="table-cell text-right">
-                <div className="amount">{formatCurrency(emp.bankAccount.balance)}</div>
+                <div className="amount">{formatCurrency(emp.account.currentBalance)}</div>
               </td>
               {canManageEmployees() && (
                 <td className="table-cell text-center">
@@ -207,8 +220,8 @@ export default function App() {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   
   // Data state (from real backend)
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [company, setCompany] = useState<Company | null>(null);
+  const [employees, setEmployees] = useState<EmployeeDisplay[]>([]);
+  const [company, setCompany] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -269,7 +282,7 @@ export default function App() {
   const isEmployee = () => userRole === 'EMPLOYEE';
   const canManageEmployees = () => isAdmin() || isEmployer();
   const canManagePayroll = () => isAdmin() || isEmployer();
-  const canViewAllData = () => isAdmin() || isEmployer();
+  //
 
   // Data Loading
   const loadData = async () => {
@@ -279,14 +292,22 @@ export default function App() {
       console.log('🔄 Loading data from APIs...');
 
       const [employeesData, companyData] = await Promise.all([
-        employeeService.getAll(0, 50, 'grade.rank'), // Get first 50 employees sorted by grade
+        employeeService.getAll(0, 50, 'grade.rank'),
         companyService.getAccount("fc6d6c2f-8f00-4243-9a32-39b9dc615cff")
       ]);
+      // employeesData is now an array
+      // Fix typing: employeesData can be array or paged object
+      let employeesRaw: any[] = [];
+      if (Array.isArray(employeesData)) {
+        employeesRaw = employeesData;
+      } else if (employeesData && Array.isArray((employeesData as any).content)) {
+        employeesRaw = (employeesData as any).content;
+      }
+      console.log('📊 Raw employees from API:', employeesRaw.length);
 
-      // Extract employees from paginated response
-      const employees = employeesData.content || [];
-      console.log('📊 Raw employees from API:', employees.length);
-      
+      // Map backend Employee to EmployeeDisplay for UI
+      const employees: EmployeeDisplay[] = employeesRaw.map((emp: any) => toEmployeeDisplay(emp));
+
       // Filter data based on user role
       let filteredEmployees = employees;
       if (isEmployee() && currentUserId) {
@@ -297,11 +318,11 @@ export default function App() {
         console.log('👥 Admin/Employer view - showing all data');
       }
 
-      setEmployees(filteredEmployees);
-      setCompany(companyData);
+  setEmployees(filteredEmployees);
+  setCompany(companyData || {});
       console.log('✅ Data loaded successfully');
-      console.log('📊 Employees:', transformedEmployees.length);
-      console.log('🏢 Company balance:', companyData.currentBalance);
+  console.log('📊 Employees:', filteredEmployees.length);
+  console.log('🏢 Company balance:', companyData && companyData.mainAccount ? companyData.mainAccount.currentBalance : 0);
     } catch (error: any) {
       console.error('❌ Failed to load data:', error);
       setError('Failed to load data: ' + (error.message || 'Unknown error'));
@@ -312,25 +333,22 @@ export default function App() {
   };
 
   // Memoized calculations (same as original)
-  const basicSalariesByGrade = useMemo(() => {
-    return GRADE_LEVELS.reduce((acc, grade) => {
-      acc[grade] = calculateBasicSalary(grade, grade6Basic);
-      return acc;
-    }, {} as Record<number, number>);
-  }, [grade6Basic]);
+  //
 
   const totalSalaryRequired = useMemo(() => {
     return employees.reduce((total, emp) => total + (emp.salary?.gross || 0), 0);
   }, [employees]);
 
-  const companyAccountBalance = company?.currentBalance || 0;
+  // Safely get company account balance, handle undefined mainAccount
+  const companyAccountBalance = company && company.mainAccount && typeof company.mainAccount.currentBalance === 'number'
+    ? company.mainAccount.currentBalance
+    : 0;
 
   // Auth functions
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-
     try {
       console.log('🚀 Attempting API login...');
       const response = await authService.login(credentials);
@@ -441,8 +459,20 @@ export default function App() {
   const startAddEmployee = () => {
     const newId = getNextEmployeeId();
     setEditEmployee({
-      id: newId, name: '', gradeRank: 6, address: '', mobile: '', salary: null,
-      grade: { id: '', name: 'Grade 6', rank: 6 }, // Add grade object structure
+      id: newId,
+      code: newId,
+      name: '',
+      address: '',
+      mobile: '',
+      grade: { id: '', name: 'Grade 6', rank: 6 },
+      account: {
+        id: '', ownerType: '', ownerId: '', accountType: 'SAVINGS', accountName: '', accountNumber: '', currentBalance: 0, overdraftLimit: 0, branchId: '', branchName: '', status: '', createdAt: '', createdBy: null
+      },
+      company: {
+        id: '', name: '', description: '', salaryFormulaId: '', mainAccount: null, createdAt: '', createdBy: null
+      },
+      status: 'ACTIVE',
+      salary: null,
       bankAccount: { type: 'Savings', name: '', number: '', balance: 0, bank: '', branch: '' },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -453,29 +483,49 @@ export default function App() {
   const handleSaveEmployee = async (empData: EmployeeDisplay) => {
     try {
       setIsLoading(true);
-      
-      const gradeRank = empData.gradeRank || empData.grade?.rank || 6;
-      
-      // Create the payload structure that matches the API
+      // Use grade rank from grade object
+      const gradeRank = empData.grade?.rank || 6;
+      // Create the payload structure that matches the Employee type for the backend
       const createPayload = {
-        bizId: empData.id || `${Date.now()}`, // Use employee ID or generate one
+        id: empData.id || `${Date.now()}`,
+        code: empData.code || empData.id || `${Date.now()}`,
         name: empData.name,
-        mobile: empData.mobile,
         address: empData.address,
-        gradeId: getGradeIdByRank(gradeRank), // You'll need this function
-        companyId: "fc6d6c2f-8f00-4243-9a32-39b9dc615cff", // Hard-coded for now
-        username: empData.name.toLowerCase().replace(/\s+/g, ''),
-        email: `${empData.name.toLowerCase().replace(/\s+/g, '')}@company.com`,
-        password: "temp123", // Default password
-        accountName: empData.name,
-        accountNumber: empData.bankAccount?.number || `EMP${Date.now()}`,
-        accountType: empData.bankAccount?.type || "SAVINGS",
-        overdraftLimit: "0.00",
-        branchId: "a6f0e97e-901f-4f30-bc82-c80730c8eab0" // Hard-coded for now
+        mobile: empData.mobile,
+        grade: {
+          id: getGradeIdByRank(gradeRank),
+          name: `Grade ${gradeRank}`,
+          rank: gradeRank,
+        },
+        account: {
+          id: '',
+          ownerType: 'EMPLOYEE',
+          ownerId: '',
+          accountType: empData.bankAccount?.type || 'Savings',
+          accountName: empData.bankAccount?.name || empData.name,
+          accountNumber: empData.bankAccount?.number || `EMP${Date.now()}`,
+          currentBalance: empData.bankAccount?.balance || 0,
+          overdraftLimit: 0,
+          branchId: '',
+          branchName: empData.bankAccount?.branch || '',
+          status: 'ACTIVE',
+          createdAt: new Date().toISOString(),
+          createdBy: null,
+        },
+        company: {
+          id: 'fc6d6c2f-8f00-4243-9a32-39b9dc615cff',
+          name: '',
+          description: '',
+          salaryFormulaId: '',
+          mainAccount: null,
+          createdAt: '',
+          createdBy: null,
+        },
+        status: 'ACTIVE',
+        // salary, createdAt, updatedAt are omitted as required by API
       };
 
       const existingIndex = employees.findIndex(e => e.id === empData.id);
-      
       if (existingIndex !== -1) {
         // Update existing employee
         await employeeService.update(empData.id, createPayload);
@@ -487,7 +537,6 @@ export default function App() {
         // Create new employee
         const createdEmployee = await employeeService.create(createPayload);
         console.log('✅ Employee created:', createdEmployee);
-        
         // Reload data to get fresh employee list
         await loadData();
         setMessage(`✅ Employee ${empData.name} added successfully.`);
@@ -755,7 +804,7 @@ export default function App() {
                 <label className="form-label">Grade / Rank *</label>
                 <select
                   name="grade"
-                  value={formData.gradeRank || formData.grade?.rank || 6}
+                  value={formData.grade?.rank || 6}
                   onChange={handleChange}
                   className="form-select"
                 >
@@ -1205,7 +1254,7 @@ export default function App() {
         {view === 'employees' && (
           <EmployeeTable 
             employees={sortedEmployees} 
-            onEdit={(emp) => { setEditEmployee(emp); setView('addEdit'); }} 
+            onEdit={(emp) => { setEditEmployee(toEmployeeDisplay(emp)); setView('addEdit'); }} 
             onDelete={handleDeleteEmployee}
             onSort={handleSort}
             sortConfig={sortConfig}
