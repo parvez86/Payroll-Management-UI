@@ -70,7 +70,7 @@ class APIClient {
         config.headers['X-Request-Time'] = new Date().toISOString();
 
         // Log request in development
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           console.log(`🚀 [${config.headers['X-Request-ID']}] ${config.method?.toUpperCase()} ${config.url}`, {
             data: config.data,
             params: config.params
@@ -89,7 +89,7 @@ class APIClient {
     this.client.interceptors.response.use(
       (response) => {
         // Log successful response in development
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           const requestId = response.config.headers['X-Request-ID'];
           console.log(`✅ [${requestId}] Response:`, {
             status: response.status,
@@ -104,7 +104,7 @@ class APIClient {
         const requestId = error.config?.headers?.['X-Request-ID'];
         
         // Log error in development
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           console.error(`❌ [${requestId}] API Error:`, {
             method: error.config?.method?.toUpperCase(),
             url: error.config?.url,

@@ -5,10 +5,6 @@ import EmployeeForm from './EmployeeForm';
 import type { Employee } from '../../types';
 
 const EmployeeList: React.FC = () => {
-  // Debug logs to diagnose empty list issue
-  console.log('EmployeeList: employees from context', employees);
-  // filteredEmployees is defined below
-  console.log('EmployeeList: filteredEmployees', filteredEmployees);
   const { employees, isLoading, error, deleteEmployee } = useEmployees();
   const [showForm, setShowForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
@@ -48,6 +44,9 @@ const EmployeeList: React.FC = () => {
     const matchesGrade = filterGrade === '' || emp.grade.rank === filterGrade;
     return matchesSearch && matchesGrade;
   });
+  // Debug logs (after declaration)
+  // console.log('EmployeeList: employees from context', employees);
+  // console.log('EmployeeList: filteredEmployees', filteredEmployees);
 
   // Pagination
   const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);

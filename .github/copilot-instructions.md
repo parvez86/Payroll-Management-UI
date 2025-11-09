@@ -1,130 +1,228 @@
-# Copilot Instructions - Payroll Management UI
+# Copilot Instructions - Payroll Management System
 
-## Project Overview
-React-based payroll management system with specific business constraints:
-- **10 employees total**: Grade distribution (1:1, 2:1, 3:2, 4:2, 5:2, 6:2)
-- **4-digit unique employee IDs** (validation required)
-- **Salary calculation**: Basic + HRA(20%) + Medical(15%)
-- **Grade-based salary**: Grade 6 base + (6-grade) × 5000 increment
-- **Company account** with insufficient funds handling
+## 🎯 Project Overview
+Full-stack payroll management system with grade-based salary calculations, batch processing, and company account management. React 19 + TypeScript frontend with Spring Boot 3.5.6 backend.
 
-## Critical Business Logic
+## 🏗️ Architecture
 
-### Salary Calculation Pattern
-```javascript
-// Always use this exact formula from development.md
-const calculateSalary = (grade, baseSalaryGrade6) => {
+### Frontend Structure (`payroll-frontend/`)
+```
+src/
+├── components/          # Feature-based components
+│   ├── auth/           # Login, ProtectedRoute (JWT)
+│   ├── employee/       # EmployeeForm, EmployeeList (CRUD + validation)
+│   ├── payroll/        # PayrollProcess, SalarySheet (batch operations)
+│   ├── company/        # CompanyAccount (balance, top-up)
+│   └── shared/         # StatusMessage, TopUpModal (reusable UI)
+├── contexts/           # React Context for global state
+│   ├── AuthContext     # JWT tokens, user profile, auth state
+│   ├── EmployeeContext # Employee list, grade validation logic
+│   ├── CompanyContext  # Account balance, transactions
+│   └── StatusMessageContext # Toast notifications
+├── services/
+│   ├── api.ts          # Axios client, interceptors, all API calls
+│   └── mockAPI.ts      # Development mock data
+├── utils/
+│   └── salaryCalculator.ts # CRITICAL: Salary formula (see below)
+├── config/index.ts     # Business rules, API mode toggle
+└── App.tsx             # Routes: /login, /dashboard, /employees, /payroll, /company
+```
+
+### Tech Stack
+- **Frontend**: React 19, TypeScript 5.9, Vite 7, React Router DOM 7, Axios
+- **Backend**: Spring Boot 3.5.6, Java 24, PostgreSQL/H2
+- **Dev Server**: Vite (`npm run dev` on port 3000)
+- **Backend API**: `http://localhost:20001/pms/api/v1`
+
+## 🔐 Critical Business Rules (NEVER VIOLATE)
+
+### 1. **Salary Calculation Formula**
+**ONLY use this implementation from `src/utils/salaryCalculator.ts`:**
+```typescript
+export const calculateSalary = (grade: number, baseSalaryGrade6: number = 30000): SalaryBreakdown => {
   const basic = baseSalaryGrade6 + (6 - grade) * 5000;
-  const hra = basic * 0.20;
-  const medical = basic * 0.15;
+  const hra = basic * 0.20;      // 20% of basic
+  const medical = basic * 0.15;  // 15% of basic
   const gross = basic + hra + medical;
   return { basic, hra, medical, gross };
 };
+
+// Example: Grade 3 = 30000 + (6-3)*5000 = 45,000 basic
+// HRA = 9,000 | Medical = 6,750 | Gross = 60,750
 ```
 
-### Employee Validation Rules
-```javascript
-// Employee ID: exactly 4 digits, unique
-const validateEmployeeId = (id) => /^\d{4}$/.test(id);
+### 2. **Employee Constraints**
+- **Total**: Exactly 10 employees (enforced in backend)
+- **Grade Distribution**: `{1:1, 2:1, 3:2, 4:2, 5:2, 6:2}` (validated in `EmployeeContext`)
+- **Employee ID**: Must be exactly 4 digits, unique (validated via `validateEmployeeId()`)
+- **Bank Account**: Auto-created on employee creation (backend handles)
 
-// Grade distribution enforcement (must be checked on create/update)
-const GRADE_LIMITS = { 1: 1, 2: 1, 3: 2, 4: 2, 5: 2, 6: 2 };
+### 3. **Payroll Batch Processing**
+- **Workflow**: Create batch → Preview calculations → Process transfer
+- **Insufficient Funds**: Show `TopUpModal` when `companyBalance < totalPayroll`
+- **Status Tracking**: `PENDING → PROCESSING → COMPLETED/FAILED`
+- **Per-Employee Status**: Track individual transfer success/failure
+
+## 🔌 API Integration Patterns
+
+### Authentication Flow (JWT)
+```typescript
+// 1. Login → Store tokens in localStorage
+authService.login({ username, password })
+  → response.data: { accessToken, refreshToken, user, expiresIn }
+  → localStorage: 'accessToken', 'refreshToken', 'user'
+
+// 2. Protected Requests → Axios Interceptor adds Bearer token
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('accessToken');
+  config.headers.Authorization = `Bearer ${token}`;
+});
+
+// 3. 401 Response → Clear tokens, redirect to /login
 ```
 
-## Required Components Structure
-Follow this exact structure from `development.md`:
-
-```
-src/
-├── components/
-│   ├── auth/           → Login/Logout with JWT
-│   ├── employee/       → CRUD with grade distribution validation
-│   ├── payroll/        → Salary calculation & batch transfer
-│   ├── company/        → Account balance & top-up functionality
-│   └── shared/         → Reusable form components
-├── services/           → API integration layer
-├── utils/              → Salary calculation helpers
-└── App.js              → Router with protected routes
-```
-
-## State Management Pattern
-Use React Context for global state:
-- **AuthContext**: JWT token, user roles
-- **EmployeeContext**: Employee list with grade validation
-- **CompanyContext**: Account balance, transaction history
-
-## API Integration Points
-Mock or implement these endpoints from `development.md`:
-```javascript
-// Employee CRUD
-GET/POST/PUT/DELETE /pms/v1/api/employees
-// Payroll processing
-POST /pms/v1/api/payroll/batches/{id}/process
-GET /pms/v1/api/payroll/calculate
-// Company account
-GET /pms/v1/api/company/account
-POST /pms/v1/api/company/topup
+### Key API Endpoints
+```typescript
 // Auth
-POST /pms/v1/api/auth/login
+POST   /auth/login               → { accessToken, refreshToken, user }
+GET    /auth/me                  → UserProfile (requires Bearer token)
+POST   /auth/logout              → void
+
+// Employee (paginated)
+GET    /employees?page=0&size=50&sort=grade.rank → Employee[]
+POST   /employees                → Employee
+PUT    /employees/{id}           → Employee
+DELETE /employees/{id}           → void
+
+// Payroll Batches
+POST   /payroll/batches          → { id, status, totalAmount, ... }
+GET    /payroll/batches/{id}     → PayrollBatch
+POST   /payroll/batches/{id}/process → { processedItems, failures }
+GET    /payroll/batches/{id}/items?page=0&size=10 → PayrollItem[]
+
+// Company Account
+GET    /companies/{companyId}    → Company (includes mainAccount.currentBalance)
+POST   /companies/{companyId}/topup → { amount }
 ```
 
-## Critical UX Flows
+### Response Handling
+- **Success**: Backend returns data directly OR wrapped in `{ success, data, message }`
+- **Errors**: Axios interceptor logs, shows toast via `StatusMessageContext`
+- **401/403**: Clear auth, redirect to `/login`
+- **Network/Timeout**: Show connection error toast
 
-### Payroll Transfer Flow
-1. Display salary calculations for all employees
-2. Show total amount vs company balance
-3. If insufficient funds → prompt for top-up
-4. Process transfers with success/failure status per employee
-5. Display final salary sheet + remaining balance
+## 🧩 State Management Patterns
 
-### Employee Management Flow
-1. Validate 4-digit ID uniqueness
-2. Check grade distribution limits before save
-3. Auto-create bank account on employee creation
-4. Display employees grouped by grade
+### React Context Usage
+```typescript
+// 1. AuthContext: Manage authentication state
+const { user, isAuthenticated, login, logout } = useAuth();
 
-## Development Priorities (2-hour sprint)
-1. **Setup** (15 min): Create React app, install dependencies
-2. **Auth** (20 min): Login form + JWT storage
-3. **Employee CRUD** (30 min): Form with validations + list view
-4. **Salary Calculator** (25 min): Implement exact business formula
-5. **Payroll Transfer** (30 min): Transfer logic + insufficient funds handling
-6. **Reports** (15 min): Salary sheet + company balance display
-7. **Testing** (5 min): Quick manual validation
+// 2. EmployeeContext: CRUD + validation
+const { employees, addEmployee, updateEmployee, validateNewEmployee } = useEmployees();
 
-## Quick Start Commands
-```bash
-cd payroll-frontend
+// 3. CompanyContext: Account balance
+const { company, topUpAccount } = useCompany();
+
+// 4. StatusMessageContext: Toast notifications
+const { addMessage } = useStatusMessages();
+addMessage('Success!', 'success');
+```
+
+### Validation Example
+```typescript
+// Before creating employee, validate in EmployeeForm
+const error = validateNewEmployee({ bizId, grade }, isUpdate, currentEmployee);
+if (error) {
+  addMessage(error, 'error');
+  return;
+}
+```
+
+## 🛠️ Developer Workflows
+
+### Start Development
+```powershell
+# Frontend (in payroll-frontend/)
 npm install
-npm run dev  # Vite dev server
+npm run dev  # Runs on http://localhost:3000
+
+# Backend (see backend README)
+# Runs on http://localhost:20001
 ```
 
-## Project Structure (Actual)
-```
-payroll-frontend/
-├── src/
-│   ├── components/
-│   │   ├── auth/           → Login/Logout with JWT
-│   │   ├── employee/       → Employee CRUD Operations  
-│   │   ├── payroll/        → Salary calculation & batch transfer
-│   │   ├── company/        → Company account management
-│   │   └── shared/         → Reusable UI components
-│   ├── services/           → API integration layer (axios)
-│   ├── utils/              → Salary calculation helpers
-│   ├── contexts/           → React Context providers
-│   └── App.tsx             → Main router with protected routes
-├── vite.config.ts          → Vite configuration
-└── package.json            → Dependencies (React 19, TypeScript, Vite)
+### Switch API Mode
+Edit `payroll-frontend/src/config/index.ts`:
+```typescript
+export const config = {
+  USE_MOCK_API: false,  // false = real backend, true = mock data
+  API_BASE_URL: 'http://localhost:20001/pms/api/v1',
+  // ...
+};
 ```
 
-## Error Handling Patterns
-- **Form validation**: Real-time for employee ID/grade limits
-- **API errors**: Toast notifications with specific messages
-- **Insufficient funds**: Modal with top-up option
-- **Transfer failures**: Per-employee status indicators
+### Build for Production
+```powershell
+cd payroll-frontend
+npm run build         # Outputs to dist/
+npm run preview       # Preview production build
+```
 
-## Styling Guidelines
-- Use CSS modules or styled-components
-- Mobile-responsive tables for employee/payroll data
-- Clear visual indicators for grade levels (1=highest)
-- Success/error states for transfers and validations
+### Debugging
+- **API Requests**: Check browser DevTools → Network tab
+- **Console Logs**: Axios interceptor logs all requests/responses in dev mode
+- **Auth Issues**: Check `localStorage` for `accessToken`, `user`
+- **Validation Errors**: Check `EmployeeContext.error` state
+
+## 🎨 UI/UX Conventions
+
+### Form Validation
+- **Real-time**: Employee ID (4 digits), grade limits
+- **On Submit**: Server-side validation errors displayed via toast
+
+### Error Display
+- **Toast Notifications**: `StatusMessage` component (success/error/warning)
+- **Inline Errors**: Form field validation errors below inputs
+- **Modal Dialogs**: Top-up modal for insufficient funds
+
+### Responsive Design
+- Mobile-first CSS
+- Tables responsive (employee list, payroll sheet)
+- Forms optimized for touch
+
+## 🔍 Key Files Reference
+
+### Critical Business Logic
+- `src/utils/salaryCalculator.ts` - **Salary formula (NEVER change)**
+- `src/config/index.ts` - Business rules (grade distribution, API mode)
+- `src/contexts/EmployeeContext.tsx` - Grade validation logic
+
+### API Integration
+- `src/services/api.ts` - **All API calls, interceptors, auth handling**
+- `src/services/mockAPI.ts` - Mock data for development
+
+### Components
+- `src/components/employee/EmployeeForm.tsx` - Employee CRUD with validation
+- `src/components/payroll/PayrollProcess.tsx` - Batch creation, processing
+- `src/components/company/CompanyAccount.tsx` - Balance, top-up
+- `src/components/auth/ProtectedRoute.tsx` - Route guards
+
+### Types
+- `src/types/index.ts` - TypeScript interfaces (Employee, PayrollBatch, Company, etc.)
+
+## 🚨 Common Pitfalls
+
+1. **DON'T modify salary formula** - Use `salaryCalculator.ts` as-is
+2. **DON'T hardcode grade limits** - Read from `config.GRADE_DISTRIBUTION`
+3. **DON'T skip validation** - Always call `validateNewEmployee()` before submit
+4. **DON'T forget auth headers** - Axios interceptor handles this (check it's working)
+5. **DON'T use mock data in production** - Set `USE_MOCK_API: false`
+
+## 📚 Documentation
+- `docs/api-endpoints.md` - Full API reference
+- `docs/business-logic.md` - Business rules summary
+- `docs/error-handling.md` - Error patterns
+- `development.md` - Backend architecture (Spring Boot domain model)
+
+---
+**For backend setup/API development, see `development.md` and backend README.**

@@ -98,8 +98,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
-    authService.logout();
-    dispatch({ type: 'LOGOUT' });
+  authService.logout();
+  // Clear payroll-related localStorage/sessionStorage keys
+  localStorage.removeItem('payrollBatchInfo');
+  localStorage.removeItem('payrollBatchId');
+  localStorage.removeItem('payrollBatchStatus');
+  sessionStorage.removeItem('payrollBatchInfo');
+  sessionStorage.removeItem('payrollBatchId');
+  sessionStorage.removeItem('payrollBatchStatus');
+  dispatch({ type: 'LOGOUT' });
   };
 
   const clearError = () => {

@@ -3,11 +3,11 @@
 export const config = {
   // API Configuration
   USE_MOCK_API: false, // Set to false for backend integration
-  API_BASE_URL: process.env.VITE_API_BASE_URL || 'http://localhost:20001/pms/v1/api',
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:20001/pms/v1/api',
   API_TIMEOUT: 30000, // 30 seconds timeout
   
   // Environment detection
-  ENVIRONMENT: process.env.NODE_ENV || 'development',
+  ENVIRONMENT: import.meta.env.MODE || 'development',
   
   // App metadata
   APP_NAME: 'Payroll Management System',

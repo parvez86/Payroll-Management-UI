@@ -87,15 +87,16 @@ body {
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   font-size: 1rem;
   transition: all 0.2s ease-in-out;
-  background-color: #f9fafb;
-  color: #000000;
+  background-color: #fff;
+  color: #222;
 }
 
 .form-input:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  background-color: white;
+  background-color: #fff;
+  color: #222;
 }
 
 .login-button {
@@ -355,63 +356,27 @@ body {
   border-radius: 8px;
   font-size: 1rem;
   transition: all 0.2s ease-in-out;
-  min-width: 200px;
-}
-
-.salary-input:focus {
-  outline: none;
-  align-items: stretch;
-  gap: 1rem;
-  padding: 1rem;
-  background-color: #f9fafb;
-  border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
-}
-
-@media (min-width: 768px) {
-  .salary-controls {
-    flex-direction: row;
-    align-items: center;
-  }
-}
-
-.salary-input-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-@media (min-width: 768px) {
-  .salary-input-group {
-    width: auto;
-  }
-}
-
-.salary-label {
-  font-weight: 500;
-  color: #374151;
-  white-space: nowrap;
-}
-
-.salary-input {
   width: 100%;
   padding: 0.5rem 0.75rem;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
   transition: all 0.15s ease-in-out;
-}
-
-@media (min-width: 768px) {
-  .salary-input {
-    width: auto;
-  }
+  background-color: #fff;
+  color: #222;
 }
 
 .salary-input:focus {
   outline: none;
   border-color: #4f46e5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  background-color: #fff;
+  color: #222;
+}
+
+.form-input:disabled, .form-select:disabled, .salary-input:disabled {
+  background-color: #f3f4f6;
+  color: #888;
+  cursor: not-allowed;
 }
 
 .salary-action-buttons {
@@ -1022,10 +987,64 @@ body {
   padding: 0.5rem;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
-  background-color: white;
+  background-color: #fff;
   appearance: none;
   transition: all 0.15s ease-in-out;
   width: 100%;
+  color: #000 !important;
+  font-size: 1rem;
+}
+
+.form-select option {
+  color: #000 !important;
+  background-color: #fff !important;
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+.form-select option:hover {
+  background-color: #3b82f6 !important;
+  color: #fff !important;
+}
+
+.form-select option:checked {
+  background-color: #3b82f6 !important;
+  color: #fff !important;
+}
+
+.form-select:focus {
+  color: #000 !important;
+  background-color: #fff !important;
+}
+
+.form-select:disabled {
+  background-color: #f3f4f6;
+  color: #888;
+}
+
+input.form-input, select.form-select {
+  color: #000 !important;
+  background-color: #fff;
+}
+
+input.form-input:focus, select.form-select:focus {
+  color: #000;
+  background-color: #fff;
+}
+
+input.form-input::placeholder {
+  color: #888;
+  opacity: 1;
+}
+
+input.form-input:disabled {
+  background-color: #f3f4f6;
+  color: #888;
+}
+
+input.form-input::selection, select.form-select::selection {
+  background-color: #c7d2fe;
+  color: #000;
 }
 
 .form-select:focus {

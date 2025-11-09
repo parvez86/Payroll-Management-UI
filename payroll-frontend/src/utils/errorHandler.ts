@@ -185,7 +185,7 @@ export function formatErrorMessage(error: APIError, includeDetails: boolean = fa
  * Log error for debugging (development only)
  */
 export function logError(error: APIError, context?: string): void {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.group(`🔥 API Error${context ? ` (${context})` : ''}`);
     console.error('Code:', error.code);
     console.error('Message:', error.message);

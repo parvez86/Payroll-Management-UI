@@ -7,7 +7,6 @@
 import axios, { type AxiosResponse, type AxiosError } from 'axios';
 import type { 
   Employee, 
-  Company, 
   PayrollCalculationResponse,
   SalaryTransferRequest,
   SalaryTransferResponse,
@@ -36,9 +35,6 @@ const api = axios.create({
     'Accept': 'application/json',
   },
 });
-
-// Public endpoints that don't require authentication
-const PUBLIC_ENDPOINTS = ['/auth/login', '/auth/refresh'];
 
 // Request interceptor for JWT token and logging
 api.interceptors.request.use(
@@ -79,7 +75,7 @@ api.interceptors.request.use(
     
     // Log final headers for debugging
     const logHeaders = { ...config.headers };
-    if (logHeaders.Authorization) {
+    if (logHeaders.Authorization && typeof logHeaders.Authorization === 'string') {
       logHeaders.Authorization = `Bearer ${logHeaders.Authorization.substring(7, 27)}...`;
     }
     console.log('🔍 Final request headers:', logHeaders);
@@ -96,7 +92,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     // Log response in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, {
         status: response.status,
         data: response.data
@@ -106,7 +102,7 @@ api.interceptors.response.use(
   },
   (error: AxiosError) => {
     // Log error in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.error(`❌ API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
         status: error.response?.status,
         data: error.response?.data,
@@ -181,14 +177,11 @@ export const authService = {
       console.log('🔄 Calling /me endpoint to get user data...');
       const userProfile = await authService.getCurrentProfile();
       
-      // Store complete user data
+      // Store full user profile persistently
+      localStorage.setItem('userProfile', JSON.stringify(userProfile));
       localStorage.setItem('user', JSON.stringify(userProfile.user));
-      console.log('✅ User data stored:', userProfile.user);
-      
-      // Store user role for quick access
       localStorage.setItem('userRole', userProfile.user.role);
-      console.log('✅ User role stored:', userProfile.user.role);
-      
+      console.log('✅ User profile stored:', userProfile);
       // Return the login response with the real user data
       return {
         token: loginData.accessToken,
@@ -291,9 +284,12 @@ export const authService = {
           role: 'ADMIN'
         },
         account: {
+          id: 'temp-account',
           currentBalance: 1000000,
           accountName: 'TechCorp Main Account',
-          accountNumber: 'COMP001'
+          accountNumber: 'COMP001',
+          accountType: 'COMPANY',
+          branchName: 'Main Branch'
         },
         fullName: 'admin',
         description: 'System User - ADMIN',
@@ -426,10 +422,76 @@ export const employeeService = {
 };
 
 /**
+ * Grade Service - Real Backend API
+ */
+export const gradeService = {
+  getAll: async (): Promise<any[]> => {
+    const response: AxiosResponse<any> = await api.get('/grades');
+    console.log('🎓 Grades API response:', response.data);
+    // Handle different response formats
+    if (Array.isArray(response.data)) return response.data;
+    if (Array.isArray(response.data.data)) return response.data.data;
+    if (Array.isArray(response.data.content)) return response.data.content;
+    return [];
+  }
+};
+
+/**
+ * Branch Service - Real Backend API
+ */
+export const branchService = {
+  getAll: async (page: number = 0, size: number = 100): Promise<any[]> => {
+    const response: AxiosResponse<any> = await api.get(`/branches?page=${page}&size=${size}&sort=id`);
+    console.log('🏦 Branches API response:', response.data);
+    // Handle different response formats
+    if (Array.isArray(response.data)) return response.data;
+    if (Array.isArray(response.data.data)) return response.data.data;
+    if (Array.isArray(response.data.content)) return response.data.content;
+    if (response.data.data && Array.isArray(response.data.data.content)) return response.data.data.content;
+    return [];
+  }
+};
+
+/**
  * Payroll Management Service - Real Backend API ONLY
  * Endpoints: GET/POST /payroll/calculate, POST /payroll/transfer, GET /payroll/salary-sheet
  */
 export const payrollService = {
+  /**
+   * Create Payroll Batch (accurate)
+   * fundingAccountId is companyId
+   * Returns full batch info (see API response)
+   */
+  createPayrollBatch: async (payload: {
+    name: string;
+    payrollMonth: string;
+    companyId: string;
+    fundingAccountId: string;
+    description: string;
+    baseSalary: number;
+  }): Promise<any> => {
+    // fundingAccountId comes from payload
+    const batchPayload = {
+      ...payload
+    };
+    const response: AxiosResponse<any> = await api.post('/payroll/batches', batchPayload);
+    // Store batch info and status for business logic
+    if (response.status === 200 && response.data) {
+      // Store batchId and status in localStorage for UI logic
+      localStorage.setItem('payrollBatchId', response.data.id);
+      localStorage.setItem('payrollBatchStatus', response.data.payrollStatus);
+      localStorage.setItem('payrollBatchInfo', JSON.stringify(response.data));
+    }
+    return response.data;
+  },
+  /**
+   * Get Payroll Batch by ID
+   */
+  getPayrollBatchById: async (batchId: string): Promise<any> => {
+    const response: AxiosResponse<any> = await api.get(`/payroll/batches/${batchId}`);
+    return response.data;
+  },
+
   calculateSalaries: async (grade6Basic: number): Promise<PayrollCalculationResponse> => {
     const response: AxiosResponse<APIResponse<PayrollCalculationResponse>> = await api.post('/payroll/calculate', { grade6Basic });
     return response.data.data;
@@ -448,6 +510,37 @@ export const payrollService = {
   getSalarySheet: async (grade6Basic: number): Promise<SalarySheetResponse> => {
     const response: AxiosResponse<APIResponse<SalarySheetResponse>> = await api.get(`/payroll/salary-sheet?grade6Basic=${grade6Basic}`);
     return response.data.data;
+  },
+
+  /**
+   * Get Payroll Batch Items (paginated)
+   * Backend expects sort format like: amount
+   */
+  getPayrollBatchItems: async (batchId: string, page = 0, size = 10, sort = 'amount'): Promise<any> => {
+    const response: AxiosResponse<any> = await api.get(`/payroll/batches/${batchId}/items`, {
+      params: {
+        page,
+        size,
+        sort
+      }
+    });
+    return response.data;
+  },
+
+  /**
+   * Get Pending Payroll Batch for Company
+   */
+  getPendingBatch: async (companyId: string): Promise<any> => {
+    const response: AxiosResponse<any> = await api.get(`/payroll/companies/${companyId}/pending-batch`);
+    return response.data;
+  },
+
+  /**
+   * Process Payroll Batch (transfer salaries)
+   */
+  processPayrollBatch: async (batchId: string): Promise<any> => {
+    const response: AxiosResponse<any> = await api.post(`/payroll/batches/${batchId}/process`);
+    return response.data;
   }
 };
 
@@ -456,14 +549,24 @@ export const payrollService = {
  * Endpoints: GET /company/account, POST /company/topup, GET /company/transactions
  */
 export const companyService = {
-  getAccount: async (companyId: string): Promise<import('../types').BackendCompany> => {
-    const response: AxiosResponse<APIResponse<import('../types').BackendCompany>> = await api.get(`/companies/${companyId}`);
-    return response.data.data;
+  getBanks: async () => {
+    const response = await api.get('/banks?page=0&size=100&sort=name');
+    return response.data.content;
   },
 
-  topUp: async (request: TopUpRequest): Promise<TopUpResponse> => {
-    const response: AxiosResponse<APIResponse<TopUpResponse>> = await api.post('/company/topup', request);
-    return response.data.data;
+  getBranches: async (bankId: string) => {
+    const response = await api.get(`/branches?bankId=${bankId}&page=0&size=100&sort=id`);
+    return response.data.content;
+  },
+
+  getAccount: async (companyId: string): Promise<import('../types').BackendCompany> => {
+    const response: AxiosResponse<import('../types').BackendCompany> = await api.get(`/companies/${companyId}`);
+    return response.data;
+  },
+
+  topUp: async (companyId: string, request: TopUpRequest): Promise<import('../types').BackendCompany> => {
+    const response: AxiosResponse<import('../types').BackendCompany> = await api.post(`/companies/${companyId}/topup`, request);
+    return response.data;
   },
 
   getTransactions: async (limit?: number, offset?: number): Promise<TransactionHistoryResponse> => {

@@ -1,13 +1,21 @@
 import React, { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
 import { companyService } from '../services/api';
-import type { Company, Transaction, TopUpRequest, BackendCompany, TransactionHistoryResponse, TopUpResponse } from '../types';
+import type { Transaction, TopUpRequest, BackendCompany, TransactionHistoryResponse, TopUpResponse } from '../types';
 
-interface CompanyState {
-  company: Company | null;
-  transactions: Transaction[];
+type CompanyState = {
+  company: BackendCompany | null;
+  transactions: Array<Transaction>;
   isLoading: boolean;
   error: string | null;
-}
+};
+
+type CompanyAction =
+  | { type: 'LOAD_START' }
+  | { type: 'LOAD_COMPANY_SUCCESS'; payload: BackendCompany }
+  | { type: 'LOAD_TRANSACTIONS_SUCCESS'; payload: Array<Transaction> }
+  | { type: 'LOAD_FAILURE'; payload: string }
+  | { type: 'TOP_UP_SUCCESS'; payload: { company: BackendCompany; transaction: Transaction } }
+  | { type: 'CLEAR_ERROR' };
 
 interface CompanyContextType extends CompanyState {
   loadCompanyAccount: () => Promise<void>;
@@ -15,14 +23,6 @@ interface CompanyContextType extends CompanyState {
   loadTransactions: () => Promise<void>;
   clearError: () => void;
 }
-
-type CompanyAction = 
-  | { type: 'LOAD_START' }
-  | { type: 'LOAD_COMPANY_SUCCESS'; payload: Company }
-  | { type: 'LOAD_TRANSACTIONS_SUCCESS'; payload: Transaction[] }
-  | { type: 'LOAD_FAILURE'; payload: string }
-  | { type: 'TOP_UP_SUCCESS'; payload: { company: Company; transaction: Transaction } }
-  | { type: 'CLEAR_ERROR' };
 
 const initialState: CompanyState = {
   company: null,
@@ -62,19 +62,36 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   const loadCompanyAccount = async () => {
     dispatch({ type: 'LOAD_START' });
     try {
-      const companyRaw: BackendCompany = await companyService.getAccount("fc6d6c2f-8f00-4243-9a32-39b9dc615cff");
-      // Flatten mainAccount fields to top-level for UI compatibility
-      const company: Company = {
-        accountNumber: companyRaw.mainAccount.accountNumber,
-        accountName: companyRaw.mainAccount.accountName,
-        currentBalance: companyRaw.mainAccount.currentBalance,
-        bank: companyRaw.mainAccount.branchName,
-        branch: companyRaw.mainAccount.branchName,
-        lastUpdated: companyRaw.mainAccount.createdAt,
-      };
-      dispatch({ type: 'LOAD_COMPANY_SUCCESS', payload: company });
+      // 1. Try to get companyId from userProfile (stringified JSON)
+      let companyId = null;
+      const userProfileRaw = localStorage.getItem('userProfile');
+      if (userProfileRaw) {
+        try {
+          const userProfile = typeof userProfileRaw === 'string' ? JSON.parse(userProfileRaw) : userProfileRaw;
+          companyId = userProfile.companyId || (userProfile.company && userProfile.company.id);
+        } catch (e) {}
+      }
+      // 2. Fallback: try minimal user object
+      if (!companyId) {
+        const userRaw = localStorage.getItem('user');
+        if (userRaw) {
+          try {
+            const user = JSON.parse(userRaw);
+            companyId = user.companyId || (user.company && user.company.id);
+          } catch (e) {}
+        }
+      }
+      if (!companyId) {
+        companyId = localStorage.getItem('companyId');
+      }
+      if (!companyId) {
+        throw new Error('No companyId found for current user');
+      }
+      // 3. Always refresh from API for latest
+      const companyRaw: BackendCompany = await companyService.getAccount(companyId);
+      dispatch({ type: 'LOAD_COMPANY_SUCCESS', payload: companyRaw });
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to load company account';
+      const message = error.response?.data?.message || error.message || 'Failed to load company account';
       dispatch({ type: 'LOAD_FAILURE', payload: message });
     }
   };
@@ -83,15 +100,30 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const topUpResponse: TopUpResponse = await companyService.topUp(request);
       // Reload company account to get updated balance
-      const companyRaw: BackendCompany = await companyService.getAccount("fc6d6c2f-8f00-4243-9a32-39b9dc615cff");
-      const company: Company = {
-        accountNumber: companyRaw.mainAccount.accountNumber,
-        accountName: companyRaw.mainAccount.accountName,
-        currentBalance: companyRaw.mainAccount.currentBalance,
-        bank: companyRaw.mainAccount.branchName,
-        branch: companyRaw.mainAccount.branchName,
-        lastUpdated: companyRaw.mainAccount.createdAt,
-      };
+      let companyId = null;
+      const userProfileRaw = localStorage.getItem('userProfile');
+      if (userProfileRaw) {
+        try {
+          const userProfile = typeof userProfileRaw === 'string' ? JSON.parse(userProfileRaw) : userProfileRaw;
+          companyId = userProfile.companyId || (userProfile.company && userProfile.company.id);
+        } catch (e) {}
+      }
+      if (!companyId) {
+        const userRaw = localStorage.getItem('user');
+        if (userRaw) {
+          try {
+            const user = JSON.parse(userRaw);
+            companyId = user.companyId || (user.company && user.company.id);
+          } catch (e) {}
+        }
+      }
+      if (!companyId) {
+        companyId = localStorage.getItem('companyId');
+      }
+      if (!companyId) {
+        throw new Error('No companyId found for current user');
+      }
+      const companyRaw: BackendCompany = await companyService.getAccount(companyId);
       // Synthesize a Transaction from TopUpResponse for UI
       const transaction: Transaction = {
         id: topUpResponse.transactionId,
@@ -101,7 +133,7 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
         balanceAfter: topUpResponse.newBalance,
         timestamp: topUpResponse.timestamp,
       };
-      dispatch({ type: 'TOP_UP_SUCCESS', payload: { company, transaction } });
+      dispatch({ type: 'TOP_UP_SUCCESS', payload: { company: companyRaw, transaction } });
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to top up account';
       dispatch({ type: 'LOAD_FAILURE', payload: message });

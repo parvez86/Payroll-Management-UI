@@ -31,12 +31,28 @@ export interface User {
   role: 'ADMIN' | 'EMPLOYER' | 'EMPLOYEE';
 }
 
+export interface Grade {
+  id: string;
+  name: string;
+  rank: number;
+}
+
+export interface Branch {
+  id: string;
+  name: string;
+  code?: string;
+  address?: string;
+}
+
 export interface Employee {
   id: string;
   code: string; // Employee code like "1001"
   name: string;
   address: string;
   mobile: string;
+  username?: string; // Login username
+  email?: string; // Employee email
+  password?: string; // Only used when creating/updating
   grade: {
     id: string;
     name: string;
@@ -177,6 +193,7 @@ export interface Transaction {
 
 export interface TopUpRequest {
   amount: number;
+  referenceId?: string;
   description: string;
 }
 
@@ -194,27 +211,72 @@ export interface TransactionHistoryResponse {
   hasMore: boolean;
 }
 
+// Money type matching backend
+export interface Money {
+  amount: number;
+  currency: string;
+  scale: number;
+}
+
+// PayrollItem matching backend response
 export interface PayrollItem {
   id: string;
   employeeId: string;
-  employee: Employee;
-  basic: number;
-  hra: number;
-  medical: number;
-  gross: number;
-  status: 'PENDING' | 'SENT' | 'FAILED' | 'PAID';
-  failureReason?: string;
-  executedAt?: string;
+  employeeBizId: string;
+  employeeName: string;
+  grade: string;
+  basicSalary: Money;
+  hra: Money;
+  medicalAllowance: Money;
+  grossSalary: Money;
+  netAmount: Money;
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  failureReason: string | null;
+  accountNumber: string;
+}
+
+// PageResponse for paginated API responses
+export interface PageResponse<T> {
+  content: T[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    sort: {
+      empty: boolean;
+      sorted: boolean;
+      unsorted: boolean;
+    };
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+  last: boolean;
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  numberOfElements: number;
+  sort: {
+    empty: boolean;
+    sorted: boolean;
+    unsorted: boolean;
+  };
+  empty: boolean;
 }
 
 // PayrollBatch interface for batch processing
 export interface PayrollBatch {
   id: string;
+  name?: string;
   companyId: string;
-  totalAmount: number;
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  totalAmount: Money;
+  executedAmount?: Money;
+  payrollMonth?: string;
+  payrollStatus?: string;
+  status: 'PENDING' | 'PROCESSING' | 'PARTIALLY_COMPLETED' | 'COMPLETED' | 'FAILED';
   executedAt?: string;
-  items: PayrollItem[];
+  items?: PayrollItem[];
 }
 
 // API Response types

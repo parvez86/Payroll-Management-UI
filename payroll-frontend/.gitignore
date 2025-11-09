@@ -266,3 +266,5 @@ blob-report/# Deployment
 
 !index.html
 !README.md
+.github/
+.qodo

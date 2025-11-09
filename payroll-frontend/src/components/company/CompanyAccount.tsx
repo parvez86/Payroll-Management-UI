@@ -143,25 +143,25 @@ const CompanyAccount: React.FC = () => {
               <tbody>
                 {transactions.map(transaction => (
                   <tr key={transaction.id}>
-                    <td>{new Date(transaction.timestamp || transaction.requestedAt || transaction.createdAt || Date.now()).toLocaleDateString()}</td>
+                    <td>{new Date(transaction.timestamp || Date.now()).toLocaleDateString()}</td>
                     <td>
                       <span className={`transaction-type ${String(transaction.type).toLowerCase().replace('_', '-')}`}>
-                        {transaction.type === 'PAYROLL_DISBURSEMENT' || transaction.type === 'SALARY_TRANSFER' ? 'Payroll' : 'Top-up'}
+                        {transaction.type === 'SALARY_TRANSFER' ? 'Payroll' : 'Top-up'}
                       </span>
                     </td>
                     <td>
-                      <span className={transaction.type === 'PAYROLL_DISBURSEMENT' || transaction.type === 'SALARY_TRANSFER' ? 'debit' : 'credit'}>
-                        {transaction.type === 'PAYROLL_DISBURSEMENT' || transaction.type === 'SALARY_TRANSFER' ? '-' : '+'}
+                      <span className={transaction.type === 'SALARY_TRANSFER' ? 'debit' : 'credit'}>
+                        {transaction.type === 'SALARY_TRANSFER' ? '-' : '+'}
                         {formatCurrency(transaction.amount)}
                       </span>
                     </td>
                     <td>
-                      <span className={`status-badge ${String(transaction.status || 'SUCCESS').toLowerCase()}`}>
-                        {transaction.status || 'SUCCESS'}
+                      <span className={`status-badge success`}>
+                        SUCCESS
                       </span>
                     </td>
                     <td>
-                      {transaction.type === 'PAYROLL_DISBURSEMENT' || transaction.type === 'SALARY_TRANSFER'
+                      {transaction.type === 'SALARY_TRANSFER'
                         ? 'Employee salary disbursement' 
                         : 'Account top-up'
                       }
