@@ -1,0 +1,66 @@
+<div class="company-container">
+  <h2 class="section-title">🏢 Company Account Management</h2>
+
+  <div class="balance-card">
+    <div class="balance-label">Current Balance</div>
+    <div class="balance-amount" [class.negative]="balance() < 0">
+      {{ formatCurrency(balance()) }}
+    </div>
+    <button (click)="openTopUpModal()" class="top-up-button">
+      ➕ Top Up Account
+    </button>
+  </div>
+
+  <div class="info-section">
+    <h3 class="subsection-title">Account Information</h3>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">Company ID</div>
+        <div class="info-value">{{ companyId() }}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Account Status</div>
+        <div class="info-value">
+          @if (balance() >= 0) {
+            <span class="status-active">✅ Active</span>
+          } @else {
+            <span class="status-warning">⚠️ Low Balance</span>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top-up Modal -->
+  @if (isTopUpModalOpen()) {
+    <div class="modal-overlay" (click)="closeTopUpModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">💰 Top Up Company Account</h3>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Amount (BDT)</label>
+            <input 
+              type="number" 
+              class="form-input"
+              [ngModel]="topUpAmount()"
+              (ngModelChange)="topUpAmount.set(+$event)"
+              min="1000"
+              max="1000000"
+              placeholder="Enter amount (min: 1,000)"
+            />
+          </div>
+          <p class="info-text">
+            💡 Minimum: 1,000 BDT | Maximum: 10,00,000 BDT
+          </p>
+        </div>
+        <div class="modal-actions">
+          <button (click)="closeTopUpModal()" class="btn btn-secondary">Cancel</button>
+          <button (click)="handleTopUp()" class="btn btn-primary">Add Funds</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<app-toast-message [message]="message()" (close)="clearMessage()" />
+<app-loading-spinner [loading]="loading()" message="Processing..." />

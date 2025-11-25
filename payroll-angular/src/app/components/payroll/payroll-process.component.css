@@ -1,0 +1,581 @@
+.payroll-container {
+  padding: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+}
+
+.salary-controls {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.salary-input-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.salary-label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.salary-input {
+  padding: 0.5rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  width: 150px;
+}
+
+.salary-action-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.salary-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.salary-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.salary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.salary-button.calculate {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.salary-button.transfer {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+/* New Payroll Processing Card */
+.payroll-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem 1.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  margin-bottom: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.payroll-card-header {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: .5px;
+  color: #1f2937;
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  border-bottom: 2px solid #f3f4f6;
+  padding-bottom:.5rem;
+}
+
+.payroll-card-body {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-end;
+  gap:1.25rem;
+  justify-content:space-between;
+}
+
+.payroll-input-group {
+  display:flex;
+  flex-direction:column;
+  gap:.5rem;
+  min-width:220px;
+}
+
+.payroll-label {
+  font-size:.75rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  color:#4b5563;
+}
+
+.payroll-input {
+  padding:.65rem .9rem;
+  border:1px solid #d1d5db;
+  border-radius:8px;
+  font-size:.9rem;
+  background:#f9fafb;
+  transition:border .15s, background .15s;
+  width:200px;
+}
+.payroll-input:focus {
+  outline:none;
+  border-color:#6366f1;
+  background:#ffffff;
+  box-shadow:0 0 0 3px rgba(99,102,241,.12);
+}
+
+.payroll-actions {
+  display:flex;
+  gap:.75rem;
+  flex-wrap:wrap;
+}
+
+.pay-btn {
+  padding:.65rem 1.1rem;
+  border:none;
+  border-radius:8px;
+  font-size:.85rem;
+  font-weight:600;
+  display:inline-flex;
+  align-items:center;
+  gap:.4rem;
+  cursor:pointer;
+  letter-spacing:.25px;
+  transition:background .2s, transform .2s, box-shadow .2s;
+}
+.pay-btn:disabled { opacity:.55; cursor:not-allowed; }
+.pay-btn:hover:not(:disabled){ transform:translateY(-2px); }
+.pay-btn.primary { background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; }
+.pay-btn.primary:hover:not(:disabled){ box-shadow:0 6px 14px rgba(37,99,235,.35); }
+.pay-btn.success { background:linear-gradient(135deg,#10b981,#059669); color:#fff; }
+.pay-btn.success:hover:not(:disabled){ box-shadow:0 6px 14px rgba(5,150,105,.35); }
+.pay-btn.warning { background:linear-gradient(135deg,#fbbf24,#f59e0b); color:#fff; }
+.pay-btn.warning:hover:not(:disabled){ box-shadow:0 6px 14px rgba(245,158,11,.35); }
+
+/* Salary Sheet Header */
+.salary-sheet-header {
+  margin-bottom: 1.5rem;
+}
+
+.sheet-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Salary Overview Cards */
+.salary-overview {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.overview-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-left: 5px solid #10b981;
+}
+
+.overview-card.pay-amount {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-left-color: #f59e0b;
+}
+
+.overview-card.paid-amount {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border-left-color: #10b981;
+}
+
+.overview-card.company-balance {
+  background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+  border-left-color: #8b5cf6;
+}
+
+.card-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #059669;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.overview-card.pay-amount .card-label {
+  color: #b45309;
+}
+
+.overview-card.company-balance .card-label {
+  color: #7c3aed;
+}
+
+.card-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.card-value.green {
+  color: #059669;
+}
+
+.overview-card.pay-amount .card-value {
+  color: #b45309;
+}
+
+.card-value.danger {
+  color: #dc2626;
+}
+
+/* Batch Information Card - Modern Design */
+.batch-info-card-modern {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 1.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.batch-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.batch-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.batch-info-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.batch-icon {
+  font-size: 1rem;
+}
+
+.batch-info-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+  word-break: break-all;
+}
+
+.batch-status-pill {
+  display: inline-block;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.batch-status-pill.completed {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.batch-status-pill.pending {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.batch-info-na {
+  color: #9ca3af;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Table Wrapper */
+.table-wrapper {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.salary-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-header {
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: white;
+}
+
+.table-cell {
+  padding: 1rem;
+  text-align: left;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.table-body tr {
+  border-bottom: 1px solid #e5e7eb;
+  transition: background-color 0.2s;
+}
+
+.table-body tr:hover {
+  background-color: #f9fafb;
+}
+
+.table-body tr.paid-row {
+  background-color: #ecfdf5;
+}
+
+.employee-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.employee-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.employee-id {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.grade-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.salary-amount {
+  font-weight: 700;
+  color: #10b981;
+  font-size: 1.1rem;
+}
+
+.net-amount {
+  font-weight: 700;
+  color: #059669;
+}
+
+.account-number {
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.status-badge.paid {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.page-size-select {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.page-btn,
+.page-number {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-btn:hover:not(:disabled),
+.page-number:hover {
+  background: #f3f4f6;
+  border-color: #7c3aed;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-number.active {
+  background: #7c3aed;
+  color: white;
+  border-color: #7c3aed;
+}
+
+.pagination-summary {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+}
+
+.modal-body {
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.info-text {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.btn-secondary {
+  background: #e5e7eb;
+  color: #374151;
+}

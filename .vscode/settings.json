@@ -4,7 +4,13 @@
     "chat.commandCenter.enabled": false,
     "editor.formatOnPaste": true,
     "editor.autoIndentOnPaste": true,
+
     "github.copilot.nextEditSuggestions.enabled": true,
     "github.copilot.chat.edits.temporalContext.enabled": true,
-    "github.copilot.chat.editor.temporalContext.enabled": true
+    "github.copilot.chat.editor.temporalContext.enabled": true,
+
+    "github.copilot.editor.inlineSuggest.enable": true,
+    "github.copilot.chat.inlineDiff.enabled": true,
+    "github.copilot.chat.enableFileActions": true,
+    "github.copilot.codeActions.enabled": true
 }

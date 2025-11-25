@@ -1,0 +1,197 @@
+<div class="form-container">
+  <div class="form-card">
+    <h2 class="form-title">
+      @if (isEditMode()) {
+        👤 Edit Employee: {{ name() }}
+      } @else {
+        👤 Add New Employee
+      }
+    </h2>
+
+    <form (ngSubmit)="onSubmit($event)">
+      <div class="form-sections">
+        <!-- Left Column: Personal Information -->
+        <div class="form-section">
+          <h3 class="section-title">👤 Personal Information</h3>
+          
+          <div class="form-group">
+            <label class="form-label">Employee ID (Code) *</label>
+            <input 
+              type="text" 
+              class="form-input"
+              [ngModel]="code()"
+              (ngModelChange)="code.set($event)"
+              name="code"
+              maxlength="4"
+              pattern="\\d{4}"
+              placeholder="4-digit ID"
+              [readonly]="isEditMode()"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input 
+              type="text" 
+              class="form-input"
+              [ngModel]="name()"
+              (ngModelChange)="name.set($event)"
+              name="name"
+              placeholder="Enter full name"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Grade / Rank *</label>
+            <select 
+              class="form-input"
+              [ngModel]="gradeRank()"
+              (ngModelChange)="gradeRank.set(+$event)"
+              name="gradeRank"
+              required>
+              @for (grade of GRADE_LEVELS; track grade) {
+                <option [value]="grade">Grade {{ grade }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Mobile Number *</label>
+            <input 
+              type="tel" 
+              class="form-input"
+              [ngModel]="mobile()"
+              (ngModelChange)="mobile.set($event)"
+              name="mobile"
+              placeholder="+880"
+              pattern="\\+?\\d{10,14}"
+              required
+            />
+            <small class="form-hint">Format: +880 followed by 10 digits (e.g., +8801712345678)</small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Address *</label>
+            <input 
+              type="text" 
+              class="form-input"
+              [ngModel]="address()"
+              (ngModelChange)="address.set($event)"
+              name="address"
+              placeholder="City, Country"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Right Column: Login Credentials -->
+        <div class="form-section">
+          <h3 class="section-title">🔐 Login Credentials</h3>
+          
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input 
+              type="email" 
+              class="form-input"
+              [ngModel]="email()"
+              (ngModelChange)="email.set($event)"
+              name="email"
+              placeholder="user@example.com"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Password *</label>
+            <input 
+              type="password" 
+              class="form-input"
+              [ngModel]="password()"
+              (ngModelChange)="password.set($event)"
+              name="password"
+              placeholder="••••••••"
+              [required]="!isEditMode()"
+            />
+            @if (isEditMode()) {
+              <small class="form-hint">Leave blank to keep current password</small>
+            }
+          </div>
+
+          <h3 class="section-title" style="margin-top: 2rem;">🏦 Bank Account Details</h3>
+          
+          <div class="form-group">
+            <label class="form-label">Account Name *</label>
+            <input 
+              type="text" 
+              class="form-input"
+              [ngModel]="accountName()"
+              (ngModelChange)="accountName.set($event)"
+              name="accountName"
+              placeholder="admin"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Account Number *</label>
+            <input 
+              type="text" 
+              class="form-input"
+              [ngModel]="accountNumber()"
+              (ngModelChange)="accountNumber.set($event)"
+              name="accountNumber"
+              placeholder="11-digit account number"
+              pattern="\\d{11}"
+              maxlength="11"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Account Type *</label>
+            <select 
+              class="form-input"
+              [ngModel]="accountType()"
+              (ngModelChange)="accountType.set($event)"
+              name="accountType"
+              required>
+              <option value="Savings Account">Savings Account</option>
+              <option value="Current Account">Current Account</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Branch Name *</label>
+            <input 
+              type="text" 
+              class="form-input"
+              [ngModel]="branchName()"
+              (ngModelChange)="branchName.set($event)"
+              name="branchName"
+              placeholder="Branch name"
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" (click)="onCancel()" class="btn btn-cancel">
+          ✕ Cancel
+        </button>
+        <button type="submit" class="btn btn-save" [disabled]="loading()">
+          @if (loading()) {
+            <span>🔄 Saving...</span>
+          } @else {
+            <span>💾 Save Employee</span>
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<app-toast-message [message]="message()" (close)="clearMessage()" />
+<app-loading-spinner [loading]="loading()" message="Saving employee..." />

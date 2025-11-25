@@ -1,0 +1,345 @@
+﻿<!-- Login Screen -->
+@if (!isLoggedIn()) {
+  <div class="login-container">
+    <form (ngSubmit)="handleLogin($event)" class="login-form">
+      <h1 class="login-title">💼 Payroll Login</h1>
+      <p class="login-subtitle">
+        Simulated Auth: Enter any credentials to proceed.
+      </p>
+      
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input 
+          type="text" 
+          class="form-input"
+          [(ngModel)]="loginUsername"
+          name="username"
+          required
+        />
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input 
+          type="password" 
+          class="form-input"
+          [(ngModel)]="loginPassword"
+          name="password"
+          required
+        />
+      </div>
+      
+      <button type="submit" class="login-button">
+        🔐 Sign In
+      </button>
+      
+      @if (message()) {
+        <p class="login-message">{{ message() }}</p>
+      }
+    </form>
+  </div>
+} @else {
+  <!-- Main Application - Logged In -->
+  <div class="app-container">
+    <div class="main-content">
+      <header class="app-header">
+        <h1 class="app-title">💵 Payroll Management System</h1>
+        <div class="header-actions">
+          <div class="company-balance" [class.negative]="companyAccountBalance() < 0">
+            Company Balance: {{ formatCurrency(companyAccountBalance()) }}
+          </div>
+          <button (click)="openTopUpModal()" class="action-button" style="background-color: #10b981; color: white; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; border: none; cursor: pointer;">
+            ➕ Top Up Account
+          </button>
+          <button (click)="handleLogout()" class="logout-button">🚪 Logout</button>
+        </div>
+      </header>
+      
+      <!-- Status Banner -->
+      <div style="background: linear-gradient(135deg, #d1fae5, #a7f3d0); border: 2px solid #10b981; border-radius: 12px; padding: 1rem; margin-bottom: 2rem; text-align: center; font-weight: 600; color: #047857;">
+        ✅ <strong>System Connected!</strong> Employee management system active
+      </div>
+      
+      <div class="content-card">
+        <div class="section-title">Employee Management System</div>
+        <div class="controls-section">
+          <div class="nav-buttons">
+            <button (click)="view.set('employees')" class="nav-button" [class.active]="view() === 'employees'">Employee Data (CRUD)</button>
+            <button (click)="view.set('salarySheet')" class="nav-button" [class.active]="view() === 'salarySheet'">Salary Sheet</button>
+            <button (click)="startAddEmployee()" class="add-employee-button">➕ Add Employee</button>
+            </div>
+          </div>
+          
+          @if (view() !== 'addEdit') {
+            <div class="salary-controls">
+              <div class="salary-input-group">
+                <label for="basicSalary" class="salary-label">Grade 6 Basic Salary (BDT):</label>
+                <input id="basicSalary" type="number" class="salary-input" [(ngModel)]="grade6Basic" min="10000" />
+              </div>
+              <div class="salary-action-buttons">
+                <button (click)="calculateSalaries()" class="salary-button calculate">Calculate All Salaries</button>
+                <button (click)="transferSalaries()" [disabled]="totalSalaryRequired() === 0" class="salary-button transfer">Transfer Salaries</button>
+              </div>
+            </div>
+          }
+        </div>
+        
+        @if (message()) {
+          <div class="toast toast-info">
+            <p>{{ message() }}</p>
+            <button (click)="message.set('')" class="toast-close">✕</button>
+          </div>
+        }
+        
+        @if (view() === 'employees') {
+          <div class="table-container">
+            <table class="employee-table">
+              <thead class="table-header">
+                <tr>
+                  <th class="table-cell clickable" (click)="handleSort('id')">ID / Name {{ getSortIcon('id') }}</th>
+                  <th class="table-cell text-center clickable" (click)="handleSort('grade')">Grade {{ getSortIcon('grade') }}</th>
+                  <th class="table-cell">Contact Info</th>
+                  <th class="table-cell">Bank Account</th>
+                  <th class="table-cell text-right clickable" (click)="handleSort('balance')">Balance {{ getSortIcon('balance') }}</th>
+                  <th class="table-cell text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="table-body">
+                @for (emp of paginatedEmployees(); track emp.id) {
+                  <tr>
+                    <td class="table-cell"><div class="employee-info"><div class="employee-name">{{ emp.name }}</div><div class="employee-id">ID: {{ emp.id }}</div></div></td>
+                    <td class="table-cell text-center"><div class="grade-badge">G{{ emp.grade }}</div></td>
+                    <td class="table-cell"><div class="text-sm"><div>{{ emp.address }}</div><div class="text-gray-500">{{ emp.mobile }}</div></div></td>
+                    <td class="table-cell"><div class="bank-info"><span class="bank-name">{{ emp.account.accountName }}</span><div class="bank-details">{{ emp.account.accountNumber }} ({{ emp.account.branchName }})</div></div></td>
+                    <td class="table-cell text-right"><div class="amount">{{ formatCurrency(emp.account.currentBalance) }}</div></td>
+                    <td class="table-cell text-center">
+                      <button (click)="handleEditEmployee(emp)" class="action-button edit">✏️</button>
+                      <button (click)="handleDeleteEmployee(emp.id)" class="action-button delete">🗑️</button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Pagination -->
+          <div class="pagination">
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <span>Rows per page:</span>
+                <select [(ngModel)]="employeePageSize" (change)="setEmployeePageSize(+$any($event.target).value)" style="padding: 0.5rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.95rem;">
+                  <option [value]="5">5</option>
+                  <option [value]="10">10</option>
+                  <option [value]="20">20</option>
+                </select>
+              </div>
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <button (click)="setEmployeePage(0)" [disabled]="employeePage() === 0" class="pagination-btn">⏮️ First</button>
+                <button (click)="setEmployeePage(employeePage() - 1)" [disabled]="employeePage() === 0" class="pagination-btn">← Prev</button>
+                <span style="font-weight: 600;">{{ employeePage() + 1 }}</span>
+                <button (click)="setEmployeePage(employeePage() + 1)" [disabled]="employeePage() >= totalEmployeePages() - 1" class="pagination-btn">Next →</button>
+                <button (click)="setEmployeePage(totalEmployeePages() - 1)" [disabled]="employeePage() >= totalEmployeePages() - 1" class="pagination-btn">Last ⏭️</button>
+                <span style="color: #6b7280;">Page {{ employeePage() + 1 }} of {{ totalEmployeePages() }} ({{ sortedEmployees().length }} total)</span>
+              </div>
+            </div>
+        }
+        
+        @if (view() === 'salarySheet') {
+          <div class="content-card">
+            <h2 class="page-title">💰 Salary Sheet Overview</h2>
+            <div style="display: grid; gap: 1.5rem; margin-bottom: 2rem; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+              @if (totalSalaryRequired() > 0) {
+                <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); padding: 1.5rem; border-radius: 12px; border-left: 4px solid #10b981; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                  <div style="font-size: 0.75rem; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">PAY TO BE AMOUNT</div>
+                  <div style="font-size: 1.875rem; font-weight: 800; color: #047857;">{{ formatCurrency(totalSalaryRequired()) }}</div>
+                </div>
+              }
+              <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); padding: 1.5rem; border-radius: 12px; border-left: 4px solid #10b981; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">TOTAL PAID AMOUNT</div>
+                <div style="font-size: 1.875rem; font-weight: 800; color: #047857;">{{ formatCurrency(paymentStatus().totalPaid) }}</div>
+              </div>
+              <div [style]="companyAccountBalance() < 0 ? 'background: linear-gradient(135deg, #fee2e2, #fecaca); padding: 1.5rem; border-radius: 12px; border-left: 4px solid #ef4444; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);' : 'background: linear-gradient(135deg, #eff6ff, #dbeafe); padding: 1.5rem; border-radius: 12px; border-left: 4px solid #3b82f6; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);'">
+                <div [style]="companyAccountBalance() < 0 ? 'font-size: 0.75rem; font-weight: 700; color: #991b1b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;' : 'font-size: 0.75rem; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;'">COMPANY ACCOUNT BALANCE</div>
+                <div [style]="companyAccountBalance() < 0 ? 'font-size: 1.875rem; font-weight: 800; color: #dc2626;' : 'font-size: 1.875rem; font-weight: 800; color: #1e40af;'">{{ formatCurrency(companyAccountBalance()) }}</div>
+              </div>
+            </div>
+            
+            <!-- Complete Salary Sheet Table -->
+            <div class="table-container">
+              <table class="employee-table">
+                <thead class="table-header">
+                  <tr>
+                    <th class="table-cell">Name (ID)</th>
+                    <th class="table-cell text-center">Grade</th>
+                    <th class="table-cell text-right">Basic</th>
+                    <th class="table-cell text-right">HRA (20%)</th>
+                    <th class="table-cell text-right">Medical (15%)</th>
+                    <th class="table-cell text-right">Gross Salary</th>
+                    <th class="table-cell text-center">Paid Status</th>
+                  </tr>
+                </thead>
+                <tbody class="table-body">
+                  @for (emp of paginatedEmployees(); track emp.id) {
+                    <tr [class.table-row-success]="emp.salary?.isPaid">
+                      <td class="table-cell">
+                        <div class="employee-info">
+                          <div class="employee-name">{{ emp.name }}</div>
+                          <div class="employee-id">ID: {{ emp.id }}</div>
+                        </div>
+                      </td>
+                      <td class="table-cell text-center">
+                        <span class="grade-badge">G{{ emp.grade }}</span>
+                      </td>
+                      <td class="table-cell text-right">{{ formatCurrency(emp.salary?.basic || 0) }}</td>
+                      <td class="table-cell text-right">{{ formatCurrency(emp.salary?.houseRent || 0) }}</td>
+                      <td class="table-cell text-right">{{ formatCurrency(emp.salary?.medicalAllowance || 0) }}</td>
+                      <td class="table-cell text-right">
+                        <span class="salary-amount">{{ formatCurrency(emp.salary?.gross || 0) }}</span>
+                      </td>
+                      <td class="table-cell text-center">
+                        <span class="status-badge" [class.status-paid]="emp.salary?.isPaid" [class.status-pending]="!emp.salary?.isPaid">
+                          {{ emp.salary?.isPaid ? '✅ Paid' : '⏳ Pending' }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Pagination for Salary Sheet -->
+            <div class="pagination">
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <span>Rows per page:</span>
+                <select [(ngModel)]="employeePageSize" (change)="setEmployeePageSize(+$any($event.target).value)" style="padding: 0.5rem; border: 2px solid #e5e7eb; border-radius: 8px;">
+                  <option [value]="5">5</option>
+                  <option [value]="10">10</option>
+                  <option [value]="20">20</option>
+                </select>
+              </div>
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <button (click)="setEmployeePage(0)" [disabled]="employeePage() === 0" class="pagination-btn">⏮️ First</button>
+                <button (click)="setEmployeePage(employeePage() - 1)" [disabled]="employeePage() === 0" class="pagination-btn">← Prev</button>
+                <button class="pagination-btn" style="background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%); cursor: default;">{{ employeePage() + 1 }}</button>
+                <button (click)="setEmployeePage(employeePage() + 1)" [disabled]="employeePage() >= totalEmployeePages() - 1" class="pagination-btn">Next →</button>
+                <button (click)="setEmployeePage(totalEmployeePages() - 1)" [disabled]="employeePage() >= totalEmployeePages() - 1" class="pagination-btn">Last ⏭️</button>
+                <span style="color: #6b7280;">Page {{ employeePage() + 1 }} of {{ totalEmployeePages() }} ({{ sortedEmployees().length }} total)</span>
+              </div>
+            </div>
+          </div>
+        }
+        
+        <!-- Employee Form (Add/Edit) -->
+        @if (view() === 'addEdit' && formData()) {
+          <div class="employee-form-container">
+            <h2 class="form-title">
+              👤 {{ editEmployee()?.id === getNextEmployeeId() ? 'Add New Employee' : 'Edit Employee ID: ' + formData()!.id }}
+            </h2>
+            <form (ngSubmit)="handleSaveEmployee()">
+              <div class="form-grid">
+                <!-- Personal Information Section -->
+                <div class="form-section">
+                  <div class="form-section-title">👤 Personal Information</div>
+                  <div class="form-group">
+                    <label class="form-label">Employee ID</label>
+                    <input type="text" class="form-input" [value]="formData()!.id" disabled />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Full Name *</label>
+                    <input type="text" class="form-input" [value]="formData()!.name" (input)="updateFormField('name', $any($event.target).value)" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Grade / Rank *</label>
+                    <select class="form-select" [value]="formData()!.grade" (change)="updateFormField('grade', +$any($event.target).value)">
+                      @for (g of GRADE_LEVELS; track g) {
+                        <option [value]="g">Grade {{ g }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Mobile Number *</label>
+                    <input type="text" class="form-input" [value]="formData()!.mobile" (input)="updateFormField('mobile', $any($event.target).value)" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Address</label>
+                    <input type="text" class="form-input" [value]="formData()!.address" (input)="updateFormField('address', $any($event.target).value)" />
+                  </div>
+                </div>
+                
+                <!-- Bank Account Information Section -->
+                <div class="form-section">
+                  <div class="form-section-title">🏦 Bank Account Details</div>
+                  <div class="form-group">
+                    <label class="form-label">Account Name *</label>
+                    <input type="text" class="form-input" [value]="formData()!.account.accountName" (input)="updateBankField('accountName', $any($event.target).value)" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Account Number *</label>
+                    <input type="text" class="form-input" [value]="formData()!.account.accountNumber" (input)="updateBankField('accountNumber', $any($event.target).value)" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Account Type *</label>
+                    <select class="form-select" [value]="formData()!.account.accountType" (change)="updateBankField('accountType', $any($event.target).value)">
+                      <option value="Savings">Savings Account</option>
+                      <option value="Current">Current Account</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Bank Name *</label>
+                    <input type="text" class="form-input" [value]="formData()!.account.branchName" (input)="updateBankField('branchName', $any($event.target).value)" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Branch Name *</label>
+                    <input type="text" class="form-input" [value]="formData()!.account.branchId" (input)="updateBankField('branchId', $any($event.target).value)" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Current Balance (BDT) *</label>
+                    <input type="number" class="form-input" [value]="formData()!.account.currentBalance" (input)="updateBankField('currentBalance', +$any($event.target).value)" min="0" required />
+                  </div>
+                </div>
+              </div>
+              
+              <div class="form-section-full">
+                <div class="form-actions">
+                  <button type="button" (click)="handleCancelEdit()" class="form-cancel-button">❌ Cancel</button>
+                  <button type="submit" class="form-save-button">💾 Save Employee</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        }
+        
+        <!-- Top-Up Modal (Simplified to match React) -->
+        @if (isTopUpModalOpen()) {
+          <div class="modal-overlay" (click)="closeTopUpModal()" style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 50;">
+            <div (click)="$event.stopPropagation()" style="background: white; border-radius: 16px; max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 2rem;">
+              <div style="margin-bottom: 1.5rem;">
+                <h2 style="margin: 0 0 0.5rem 0; font-size: 1.5rem; font-weight: 700; color: #667eea; display: flex; align-items: center; gap: 0.5rem;">💰 Add Funds</h2>
+                <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">Add funds to your company account for payroll processing and other expenses.</p>
+              </div>
+              
+              <div style="background-color: #eff6ff; border: 2px solid #bfdbfe; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem;">
+                <div style="font-size: 0.75rem; color: #1e40af; font-weight: 600; margin-bottom: 0.5rem;">Current Account Balance</div>
+                <div style="font-size: 2rem; font-weight: 800; color: #1e40af;">{{ formatCurrency(companyAccountBalance()) }}</div>
+                @if (paymentStatus().requiredTopUp > 0) {
+                  <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #bfdbfe;">
+                    <div style="font-size: 0.75rem; color: #dc2626; font-weight: 600; margin-bottom: 0.25rem;">💡 Add funds to your company account for payroll processing and other expenses.</div>
+                    <div style="font-size: 0.875rem; color: #6b7280;">Minimum: BDT 1,000 | Maximum: BDT 1,000,000 (10 Lakh)</div>
+                  </div>
+                }
+              </div>
+              
+              <div style="margin-bottom: 1.5rem;">
+                <label for="topup-amount" style="display: block; font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">Top-Up Amount (BDT) <span style="color: #dc2626;">*</span></label>
+                <input id="topup-amount" type="number" class="form-input" [(ngModel)]="topUpAmount" min="0" placeholder="Enter amount to add (min: 1,000, max: 10,00,000)" style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;" />
+              </div>
+              
+              <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button (click)="closeTopUpModal()" style="padding: 0.75rem 1.5rem; background: #e5e7eb; color: #374151; font-weight: 600; border: none; border-radius: 8px; cursor: pointer;">✕ Cancel</button>
+                <button (click)="handleTopUp()" [disabled]="topUpAmount() <= 0" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;" [style.opacity]="topUpAmount() <= 0 ? '0.5' : '1'" [style.cursor]="topUpAmount() <= 0 ? 'not-allowed' : 'pointer'">💰 Add Funds</button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }

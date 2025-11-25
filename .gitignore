@@ -95,6 +95,7 @@ docs/dist/
 # =============================================================================
 # Each subdirectory should have its own .gitignore:
 # - payroll-frontend/.gitignore (React/Vite specific)
+# - payroll-angular/.gitignore (Angular specific)
 # - payroll-backend/.gitignore (Spring Boot/Maven specific)
 #
 # This allows each component to manage its own ignore patterns
@@ -109,3 +110,32 @@ docs/dist/
 !*.md
 !*/README.md
 !LICENSE
+
+# =============================================================================
+# AI ASSISTANT GUIDELINES (KEEP THESE)
+# =============================================================================
+# These directories contain AI assistant configuration files
+# They should be committed to help AI understand project structure
+
+# Keep AI assistant directories at root
+!.github/
+!.vscode/
+
+# Keep AI assistant directories in subdirectories
+!*/.claude/
+!*/.cursor/
+!*/.gemini/
+!*/.github/
+!*/.junie/
+!*/.vscode/
+!*/.windsurf/
+
+# Angular specific - keep AI guidelines
+!payroll-angular/.claude/
+!payroll-angular/.cursor/
+!payroll-angular/.gemini/
+!payroll-angular/.github/
+!payroll-angular/.junie/
+!payroll-angular/.vscode/
+!payroll-angular/.windsurf/
+!payroll-angular/AGENTS.md

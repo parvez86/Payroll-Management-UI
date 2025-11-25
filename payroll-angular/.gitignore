@@ -1,5 +1,9 @@
 # See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
+# =============================================================================
+# ANGULAR SPECIFIC IGNORES
+# =============================================================================
+
 # Compiled output
 /dist
 /tmp
@@ -10,6 +14,7 @@
 /node_modules
 npm-debug.log
 yarn-error.log
+package-lock.json
 
 # IDEs and editors
 .idea/
@@ -41,3 +46,73 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# =============================================================================
+# AI ASSISTANT DIRECTORIES (KEEP THESE)
+# =============================================================================
+# These directories contain project-specific AI assistant guidelines
+# They should be committed to help AI assistants understand the project
+
+# Keep AI assistant directories
+!.claude/
+!.cursor/
+!.gemini/
+!.github/
+!.junie/
+!.windsurf/
+
+# But ignore any cache or temp files within them
+.claude/**/*.log
+.claude/**/*.tmp
+.cursor/**/*.log
+.cursor/**/*.tmp
+.gemini/**/*.log
+.gemini/**/*.tmp
+.junie/**/*.log
+.junie/**/*.tmp
+.windsurf/**/*.log
+.windsurf/**/*.tmp
+
+# =============================================================================
+# BACKUP & TEMPORARY FILES
+# =============================================================================
+*.backup
+*.bak
+*.tmp
+*.temp
+*~
+*.component.html.backup
+*.component.ts.backup
+*.service.ts.backup
+
+# =============================================================================
+# ENVIRONMENT & CONFIG
+# =============================================================================
+.env
+.env.local
+.env.*.local
+environment.prod.ts
+environment.staging.ts
+
+# =============================================================================
+# BUILD & DEPLOYMENT
+# =============================================================================
+.vercel/
+.netlify/
+.firebase/
+
+# =============================================================================
+# LOGS & DEBUG
+# =============================================================================
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# =============================================================================
+# TESTING
+# =============================================================================
+/e2e/*.js
+/e2e/*.map
+/e2e/*.d.ts

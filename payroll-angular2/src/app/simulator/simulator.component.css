@@ -1,8 +1,0 @@
-/* Copy of SimulatedApp.css from React version. Add/adjust styles as needed. */
-.simulator-root {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #1f2937;
-  min-height: 100vh;
-  padding: 2rem;
-}

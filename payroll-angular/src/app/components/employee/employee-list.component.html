@@ -1,0 +1,96 @@
+<div class="employee-list-container">
+  <div class="list-header">
+    <h2 class="section-title">👥 Employee Management</h2>
+    <button (click)="goToAddEmployee()" class="add-button">
+      ➕ Add Employee
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table class="employee-table">
+      <thead class="table-header">
+        <tr>
+          <th class="table-cell clickable" (click)="handleSort('id')">
+            ID / Name {{ getSortIcon('id') }}
+          </th>
+          <th class="table-cell text-center clickable" (click)="handleSort('grade')">
+            Grade {{ getSortIcon('grade') }}
+          </th>
+          <th class="table-cell">Contact Info</th>
+          <th class="table-cell">Bank Account</th>
+          <th class="table-cell text-right clickable" (click)="handleSort('balance')">
+            Balance {{ getSortIcon('balance') }}
+          </th>
+          <th class="table-cell text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="table-body">
+        @for (emp of paginatedEmployees(); track emp.id) {
+          <tr>
+            <td class="table-cell">
+              <div class="employee-info">
+                <div class="employee-name">{{ emp.name }}</div>
+                <div class="employee-id">ID: {{ emp.code }}</div>
+              </div>
+            </td>
+            <td class="table-cell text-center">
+              <div class="grade-badge">G{{ emp.grade.rank }}</div>
+            </td>
+            <td class="table-cell">
+              <div class="text-sm">
+                <div>{{ emp.address }}</div>
+                <div class="text-gray-500">{{ emp.mobile }}</div>
+              </div>
+            </td>
+            <td class="table-cell">
+              <div class="bank-info">
+                <span class="bank-name">{{ emp.account.accountName }}</span>
+                <div class="bank-details">{{ emp.account.accountNumber }} ({{ emp.account.branchName }})</div>
+              </div>
+            </td>
+            <td class="table-cell text-right">
+              <div class="amount">{{ formatCurrency(emp.account.currentBalance) }}</div>
+            </td>
+            <td class="table-cell text-center">
+              <button (click)="handleEdit(emp)" class="action-button edit">✏️</button>
+              <button (click)="handleDelete(emp)" class="action-button delete">🗑️</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination">
+    <div class="pagination-controls">
+      <span>Rows per page:</span>
+      <select 
+        [ngModel]="pageSize()" 
+        (ngModelChange)="setPageSize($event)"
+        class="page-size-select">
+        <option [value]="5">5</option>
+        <option [value]="10">10</option>
+        <option [value]="20">20</option>
+      </select>
+    </div>
+    <div class="pagination-buttons">
+      <button (click)="setPage(0)" [disabled]="currentPage() === 0" class="pagination-btn">
+        ⏮️ First
+      </button>
+      <button (click)="setPage(currentPage() - 1)" [disabled]="currentPage() === 0" class="pagination-btn">
+        ← Prev
+      </button>
+      <span class="page-info">{{ currentPage() + 1 }}</span>
+      <button (click)="setPage(currentPage() + 1)" [disabled]="currentPage() >= totalPages() - 1" class="pagination-btn">
+        Next →
+      </button>
+      <button (click)="setPage(totalPages() - 1)" [disabled]="currentPage() >= totalPages() - 1" class="pagination-btn">
+        Last ⏭️
+      </button>
+      <span class="page-summary">
+        Page {{ currentPage() + 1 }} of {{ totalPages() }} ({{ sortedEmployees().length }} total)
+      </span>
+    </div>
+  </div>
+</div>

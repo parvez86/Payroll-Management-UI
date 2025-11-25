@@ -1,0 +1,43 @@
+<div class="login-container">
+  <form (ngSubmit)="onSubmit($event)" class="login-form">
+    <h1 class="login-title">💼 Payroll Login</h1>
+    <p class="login-subtitle">
+      Enter your credentials to access the system
+    </p>
+    
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input 
+        type="text" 
+        class="form-input"
+        [(ngModel)]="username"
+        name="username"
+        required
+        autocomplete="username"
+      />
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input 
+        type="password" 
+        class="form-input"
+        [(ngModel)]="password"
+        name="password"
+        required
+        autocomplete="current-password"
+      />
+    </div>
+    
+    <button type="submit" class="login-button" [disabled]="loading()">
+      @if (loading()) {
+        <span>🔄 Signing in...</span>
+      } @else {
+        <span>🔐 Sign In</span>
+      }
+    </button>
+  </form>
+</div>
+
+<app-toast-message [message]="message()" (close)="clearMessage()" />
+<app-loading-spinner [loading]="loading()" message="Authenticating..." />
