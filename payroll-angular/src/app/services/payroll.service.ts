@@ -86,13 +86,49 @@ export class PayrollService {
       url += `?employeeId=${employeeId}`;
     }
     return this.http.get<any>(url, { headers }).pipe(
-      map(response => {
-        console.log('📋 Payroll items loaded');
+      map((response: any) => {
+        console.log('📋 Payroll items loaded', response);
         if (Array.isArray(response)) return response;
-        if (response.data && Array.isArray(response.data)) return response.data;
+        if (response?.content && Array.isArray(response.content)) return response.content;
+        if (response?.data && Array.isArray(response.data)) return response.data;
         return [];
       }),
       catchError(() => of([]))
+    );
+  }
+
+  /**
+   * Create Payroll Batch - POST /payroll/batches
+   * Returns full batch info matching backend API
+   */
+  createPayrollBatch(payload: {
+    name: string;
+    payrollMonth: string;
+    companyId: string;
+    fundingAccountId: string;
+    description: string;
+    baseSalary: number;
+  }): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/payroll/batches`,
+      payload
+    ).pipe(
+      map(response => {
+        console.log('✅ Payroll batch created:', response);
+        // Store batch info in localStorage for UI logic (matching React pattern)
+        if (response && response.id) {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem('payrollBatchId', response.id);
+            localStorage.setItem('payrollBatchStatus', response.payrollStatus || response.status);
+            localStorage.setItem('payrollBatchInfo', JSON.stringify(response));
+          }
+        }
+        return response;
+      }),
+      catchError((error) => {
+        console.error('❌ Failed to create payroll batch:', error);
+        throw error;
+      })
     );
   }
 

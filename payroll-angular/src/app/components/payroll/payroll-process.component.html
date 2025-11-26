@@ -17,8 +17,8 @@
         />
       </div>
       <div class="payroll-actions">
-        <button (click)="calculateSalaries()" class="pay-btn primary" [disabled]="loading() || (batchStatus() !== '' && batchStatus() !== 'COMPLETED' && batchStatus() !== 'FAILED' && batchStatus() !== 'CANCELLED')">📝 Create Payroll</button>
-        <button (click)="processPayroll()" class="pay-btn success" [disabled]="loading() || batchStatus() !== 'PENDING'">💸 Process Payroll</button>
+        <button (click)="calculateSalaries()" class="pay-btn primary" [disabled]="loading() || employees().length === 0 || (batchStatus() === 'PENDING' || batchStatus() === 'PROCESSING' || batchStatus() === 'PARTIALLY_COMPLETED')" [title]="employees().length === 0 ? 'No employees available' : (batchStatus() === 'PENDING' || batchStatus() === 'PROCESSING') ? 'Complete or cancel current batch first' : 'Create new payroll batch'">📝 Create Payroll</button>
+        <button (click)="processPayroll()" class="pay-btn success" [disabled]="loading() || (batchStatus() !== 'PENDING' && batchStatus() !== 'PROCESSING')">💸 Process Payroll</button>
         @if (paymentStatus().requiredTopUp > 0) {
           <button (click)="openTopUpModal()" class="pay-btn warning">⚠️ Top Up Required</button>
         }
@@ -35,15 +35,15 @@
   <div class="salary-overview">
         <div class="overview-card pay-amount">
           <div class="card-label">PAY TO BE AMOUNT</div>
-          <div class="card-value green">{{ formatCurrency(totalSalaryRequired()) }}</div>
+          <div class="card-value green">{{ formatCurrency(batchData()?.totalAmount?.amount || 0) }}</div>
         </div>
         <div class="overview-card paid-amount">
           <div class="card-label">TOTAL PAID AMOUNT</div>
-          <div class="card-value green">{{ formatCurrency(paymentStatus().totalPaid) }}</div>
+          <div class="card-value green">{{ formatCurrency(batchData()?.executedAmount?.amount || 0) }}</div>
         </div>
         <div class="overview-card company-balance">
           <div class="card-label">COMPANY ACCOUNT BALANCE</div>
-          <div class="card-value" [class.danger]="companyBalance() < totalSalaryRequired()">
+          <div class="card-value" [class.danger]="companyBalance() < (batchData()?.totalAmount?.amount || 0)">
             {{ formatCurrency(companyBalance()) }}
           </div>
         </div>
@@ -73,7 +73,9 @@
         </div>
         <div class="batch-info-value">
           @if (batchStatus()) {
-            <span class="batch-status-pill" [class.completed]="batchStatus() === 'COMPLETED'" [class.pending]="batchStatus() === 'PENDING'">
+            <span class="batch-status-pill" 
+                  [class.completed]="batchStatus() === 'COMPLETED' || batchStatus() === 'PARTIALLY_COMPLETED'" 
+                  [class.pending]="batchStatus() === 'PENDING' || batchStatus() === 'PROCESSING'">
               {{ batchStatus() }}
             </span>
           } @else {
@@ -185,33 +187,50 @@
     </div>
   </div>
 
-  <!-- Top-up Modal -->
+  <!-- Top-up Modal (Enhanced - matching React TopUpModal) -->
   @if (isTopUpModalOpen()) {
     <div class="modal-overlay" (click)="closeTopUpModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <h3 class="modal-title">💰 Top Up Company Account</h3>
+      <div class="modal-content insufficient-funds-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header insufficient-funds-header">
+          <h3 class="modal-title">⚠️ Insufficient Funds</h3>
+          <button (click)="closeTopUpModal()" class="close-btn" [disabled]="loading()">✕</button>
+        </div>
         <div class="modal-body">
+          <div class="insufficient-funds-info">
+            <div class="balance-info">
+              <p><strong>Current Balance:</strong> <span class="current-balance">{{ formatCurrency(companyBalance()) }}</span></p>
+              <p><strong>Total Payroll:</strong> <span class="required-amount">{{ formatCurrency(batchData()?.totalAmount?.amount || 0) }}</span></p>
+              <p><strong>Already Paid:</strong> <span class="paid-amount">{{ formatCurrency(batchData()?.executedAmount?.amount || 0) }}</span></p>
+              <p><strong>Minimum Top-up:</strong> <span class="minimum-topup">{{ formatCurrency(paymentStatus().requiredTopUp) }}</span></p>
+            </div>
+            
+            <div class="warning-message">
+              <p>💰 The company account doesn't have sufficient funds to complete this payroll transfer.</p>
+              <p>Please add funds to continue with the payment process.</p>
+            </div>
+          </div>
+
           <div class="form-group">
-            <label class="form-label">Amount (BDT)</label>
+            <label class="form-label">Top-up Amount (BDT) *</label>
             <input 
               type="number" 
-              class="form-input"
+              class="form-input topup-amount-input"
               [ngModel]="topUpAmount()"
               (ngModelChange)="topUpAmount.set(+$event)"
-              min="1000"
-              max="1000000"
-              placeholder="Enter amount (min: 1,000)"
+              [min]="paymentStatus().requiredTopUp || 1000"
+              max="10000000"
+              step="1000"
+              placeholder="Enter amount"
+              [disabled]="loading()"
             />
+            <small class="form-hint">Minimum required: {{ formatCurrency(paymentStatus().requiredTopUp || 1000) }}</small>
           </div>
-          @if (paymentStatus().requiredTopUp > 0) {
-            <p class="info-text">
-              ⚠️ Required: {{ formatCurrency(paymentStatus().requiredTopUp) }}
-            </p>
-          }
         </div>
         <div class="modal-actions">
-          <button (click)="closeTopUpModal()" class="btn btn-secondary">Cancel</button>
-          <button (click)="handleTopUp()" class="btn btn-primary">Add Funds</button>
+          <button (click)="closeTopUpModal()" class="btn btn-secondary" [disabled]="loading()">Cancel Payment</button>
+          <button (click)="handleTopUp()" class="btn btn-primary topup-btn" [disabled]="loading() || topUpAmount() <= 0">
+            {{ loading() ? '⏳ Processing...' : '💰 Add ' + formatCurrency(topUpAmount()) + ' & Continue' }}
+          </button>
         </div>
       </div>
     </div>

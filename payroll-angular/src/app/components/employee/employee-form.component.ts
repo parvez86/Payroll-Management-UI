@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { EmployeeService } from '../../services/employee.service';
+import { BranchService, type Branch } from '../../services/branch.service';
+import { GradeService, type Grade } from '../../services/grade.service';
 import { ToastMessageComponent } from '../shared/toast-message.component';
 import { LoadingSpinnerComponent } from '../shared/loading-spinner.component';
 import type { Employee } from '../../models/api.types';
@@ -17,6 +19,8 @@ import type { Employee } from '../../models/api.types';
 })
 export class EmployeeFormComponent implements OnInit {
   private employeeService = inject(EmployeeService);
+  private branchService = inject(BranchService);
+  private gradeService = inject(GradeService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
@@ -36,13 +40,37 @@ export class EmployeeFormComponent implements OnInit {
   accountName = signal('');
   accountNumber = signal('');
   accountType = signal('Savings Account');
-  branchName = signal('');
+  branchId = signal(''); // <-- new signal for branch selection
+
+  branches = signal<Branch[]>([]); // fetched branch list
+  grades = signal<Grade[]>([]); // fetched grade list
 
   GRADE_LEVELS = [1, 2, 3, 4, 5, 6];
 
   ngOnInit() {
+    // Fetch branches for dropdown
+    this.branchService.getAllBranches().subscribe({
+      next: (branches) => {
+        this.branches.set(branches);
+      },
+      error: (err: any) => {
+        console.error('Failed to load branches:', err);
+        this.branches.set([]);
+      }
+    });
+
+    // Fetch grades for dropdown
+    this.gradeService.getAllGrades().subscribe({
+      next: (grades: Grade[]) => {
+        this.grades.set(grades);
+      },
+      error: (err: any) => {
+        console.error('Failed to load grades:', err);
+        this.grades.set([]);
+      }
+    });
+
     const id = this.route.snapshot.paramMap.get('id');
-    
     if (id) {
       this.isEditMode.set(true);
       this.employeeId.set(id);
@@ -65,8 +93,11 @@ export class EmployeeFormComponent implements OnInit {
         this.gradeRank.set(employee.grade.rank);
         this.accountName.set(employee.account?.accountName || '');
         this.accountNumber.set(employee.account?.accountNumber || '');
-        this.accountType.set(employee.account?.accountType || 'Savings Account');
-        this.branchName.set(employee.account?.branchName || '');
+        // Map backend account type format (SAVINGS/CURRENT) to display format
+        const accountType = employee.account?.accountType || 'SAVINGS';
+        this.accountType.set(accountType === 'SAVINGS' ? 'Savings Account' : 'Current Account');
+        // Set branchId for dropdown selection
+        this.branchId.set(employee.account?.branchId || '');
         this.loading.set(false);
       },
       error: (error) => {
@@ -78,58 +109,95 @@ export class EmployeeFormComponent implements OnInit {
   }
 
   generateNextCode() {
-    // This would ideally call a service to get the next available ID
-    // For now, generate a random 4-digit code
-    const randomCode = String(Math.floor(1000 + Math.random() * 9000));
-    this.code.set(randomCode);
+    // Call backend API to get next employee code
+    console.log('🔄 Requesting next employee code from API...');
+    this.employeeService.getNextEmployeeCode().subscribe({
+      next: (code: string) => {
+        console.log('✅ Received employee code from API:', code);
+        this.code.set(code);
+      },
+      error: (err: any) => {
+        console.error('❌ Failed to get next employee code from API:', err);
+        console.error('❌ Error details:', JSON.stringify(err, null, 2));
+        // Fallback to random 4-digit code if API fails
+        const randomCode = String(Math.floor(1000 + Math.random() * 9000));
+        this.code.set(randomCode);
+        this.message.set('⚠️ Using random code (API unavailable)');
+      }
+    });
   }
 
   onSubmit(event: Event) {
     event.preventDefault();
 
-    // Validation
-    if (!this.name() || !this.mobile() || !this.address() || !this.email()) {
+    // Validation - basic fields
+    if (!this.name() || !this.mobile() || !this.address()) {
       this.message.set('⚠️ Please fill in all required fields');
       return;
     }
 
-    if (!this.isEditMode() && !this.password()) {
-      this.message.set('⚠️ Password is required for new employees');
-      return;
+    // Email and password validation - only required for new employees
+    if (!this.isEditMode()) {
+      if (!this.email()) {
+        this.message.set('⚠️ Email is required for new employees');
+        return;
+      }
+      if (!this.password()) {
+        this.message.set('⚠️ Password is required for new employees');
+        return;
+      }
     }
 
-    if (!this.accountName() || !this.accountNumber() || !this.branchName()) {
-      this.message.set('⚠️ Please fill in all bank account details');
+    // Bank account validation
+    if (!this.accountName() || !this.accountNumber() || !this.branchId()) {
+      this.message.set('⚠️ Please fill in all bank account details and select a branch');
       return;
     }
 
     this.loading.set(true);
 
+    // Get companyId from user profile
+    const userProfileStr = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('userProfile') : null;
+    let companyId = 'temp-company-id';
+    if (userProfileStr) {
+      try {
+        const userProfile = JSON.parse(userProfileStr);
+        companyId = userProfile.companyId || companyId;
+      } catch (e) {
+        console.error('Failed to parse user profile:', e);
+      }
+    }
+
+    // Find the actual grade ID from the fetched grades list
+    const selectedGrade = this.grades().find(g => g.rank === this.gradeRank());
+    if (!selectedGrade) {
+      this.message.set('⚠️ Invalid grade selected');
+      this.loading.set(false);
+      return;
+    }
+
+    // Flat payload structure matching backend expectations
     const employeeData: any = {
-      code: this.code(),
+      bizId: this.code(), // Backend expects bizId, not code
       name: this.name(),
       address: this.address(),
       mobile: this.mobile(),
-      email: this.email(),
-      username: this.email(), // Use email as username
-      grade: {
-        id: `grade-${this.gradeRank()}`,
-        name: `Grade ${this.gradeRank()}`,
-        rank: this.gradeRank()
-      },
-      account: {
-        accountType: this.accountType(),
-        accountName: this.accountName(),
-        accountNumber: this.accountNumber(),
-        branchName: this.branchName(),
-        currentBalance: 0,
-        ownerType: 'EMPLOYEE',
-        status: 'ACTIVE'
-      },
-      status: 'ACTIVE'
+      gradeId: selectedGrade.id, // Use actual UUID from backend
+      companyId: companyId,
+      accountName: this.accountName(), // Flat account fields
+      accountNumber: this.accountNumber(),
+      accountType: this.accountType() === 'Savings Account' ? 'SAVINGS' : 'CURRENT', // Map to backend format
+      overdraftLimit: 0.00,
+      branchId: this.branchId()
     };
 
-    // Add password only if provided
+    // Add email/username only if provided (required for create, optional for update)
+    if (this.email()) {
+      employeeData.username = this.email();
+      employeeData.email = this.email();
+    }
+
+    // Add password only if provided (required for create, optional for update)
     if (this.password()) {
       employeeData.password = this.password();
     }

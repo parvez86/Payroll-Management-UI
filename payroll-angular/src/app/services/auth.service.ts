@@ -155,8 +155,41 @@ export class AuthService {
       localStorage.removeItem('userRole');
       localStorage.removeItem('tokenExpiration');
       localStorage.removeItem('tokenType');
-      console.log('✅ All authentication data cleared');
+      // Clear payroll-related data on logout (matching React pattern)
+      localStorage.removeItem('payrollBatchInfo');
+      localStorage.removeItem('payrollBatchId');
+      localStorage.removeItem('payrollBatchStatus');
+      sessionStorage.removeItem('payrollBatchInfo');
+      sessionStorage.removeItem('payrollBatchId');
+      sessionStorage.removeItem('payrollBatchStatus');
+      console.log('✅ All authentication and payroll data cleared');
     }
+  }
+
+  // Check if user session can be restored from localStorage
+  canRestoreSession(): boolean {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const token = window.localStorage.getItem('accessToken');
+      const userProfile = window.localStorage.getItem('userProfile');
+      return !!(token && userProfile);
+    }
+    return false;
+  }
+
+  // Get stored user profile without API call
+  getStoredUserProfile(): UserProfile | null {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const profileStr = window.localStorage.getItem('userProfile');
+      if (profileStr) {
+        try {
+          return JSON.parse(profileStr);
+        } catch (e) {
+          console.error('Failed to parse stored user profile:', e);
+          return null;
+        }
+      }
+    }
+    return null;
   }
 
   isAuthenticated(): boolean {

@@ -91,7 +91,12 @@
           <h3 class="section-title">🔐 Login Credentials</h3>
           
           <div class="form-group">
-            <label class="form-label">Email *</label>
+            <label class="form-label">
+              Email 
+              @if (!isEditMode()) {
+                <span>*</span>
+              }
+            </label>
             <input 
               type="email" 
               class="form-input"
@@ -99,12 +104,17 @@
               (ngModelChange)="email.set($event)"
               name="email"
               placeholder="user@example.com"
-              required
+              [required]="!isEditMode()"
             />
           </div>
 
           <div class="form-group">
-            <label class="form-label">Password *</label>
+            <label class="form-label">
+              Password 
+              @if (!isEditMode()) {
+                <span>*</span>
+              }
+            </label>
             <input 
               type="password" 
               class="form-input"
@@ -163,16 +173,22 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Branch Name *</label>
-            <input 
-              type="text" 
+            <label class="form-label">Branch *</label>
+            <select 
               class="form-input"
-              [ngModel]="branchName()"
-              (ngModelChange)="branchName.set($event)"
-              name="branchName"
-              placeholder="Branch name"
-              required
-            />
+              [ngModel]="branchId()"
+              (ngModelChange)="branchId.set($event)"
+              name="branchId"
+              required>
+              <option value="" disabled>Select branch</option>
+              @for (branch of branches(); track branch.id) {
+                <option [value]="branch.id">
+                  {{ branch.branchName }}
+                  @if (branch.accountNumber) { - {{ branch.accountNumber }} }
+                  @if (branch.branchType) { ({{ branch.branchType }}) }
+                </option>
+              }
+            </select>
           </div>
         </div>
       </div>

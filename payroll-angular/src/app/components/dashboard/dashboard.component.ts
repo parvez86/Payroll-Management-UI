@@ -31,23 +31,46 @@ export class DashboardComponent implements OnInit {
   message = signal('');
 
   ngOnInit() {
+    // Always check and restore auth first
     this.checkAuth();
-    this.loadInitialData();
+    
+    // Only load data if we have valid auth
+    if (this.authService.isAuthenticated()) {
+      this.loadInitialData();
+    }
   }
 
   checkAuth() {
+    // First, try to restore from localStorage (immediate, no API call)
+    if (this.authService.canRestoreSession()) {
+      const profile = this.authService.getStoredUserProfile();
+      if (profile) {
+        console.log('✅ Session restored from localStorage:', profile.user?.username);
+        this.userProfile.set(profile);
+        // Session restored successfully, component will render with stored data
+        return;
+      }
+    }
+
+    // If localStorage restore failed but we have a token, try to recover from backend
     if (typeof window !== 'undefined' && window.localStorage) {
-      const userProfileStr = window.localStorage.getItem('userProfile');
-      
-      if (userProfileStr) {
-        try {
-          const profile = JSON.parse(userProfileStr);
-          this.userProfile.set(profile);
-        } catch (e) {
-          console.error('Failed to parse stored user profile:', e);
-          this.logout();
-        }
+      const accessToken = window.localStorage.getItem('accessToken');
+      if (accessToken) {
+        console.log('🔄 Token found but no profile, fetching from backend...');
+        this.authService.getCurrentUserProfile().subscribe({
+          next: (profile) => {
+            console.log('✅ Profile recovered from backend');
+            this.userProfile.set(profile);
+            window.localStorage.setItem('userProfile', JSON.stringify(profile));
+          },
+          error: (error) => {
+            console.error('❌ Failed to recover session:', error);
+            this.authService.clearAuthData();
+            this.router.navigate(['/login']);
+          }
+        });
       } else {
+        console.log('⚠️ No token found, redirecting to login');
         this.router.navigate(['/login']);
       }
     }

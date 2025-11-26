@@ -5,14 +5,17 @@
 This is a **multi-frontend monorepo** for a Payroll Management System with grade-based salary calculations. The workspace contains two frontend implementations connecting to a shared Spring Boot backend:
 
 - **`payroll-frontend/`** - **Primary Active Codebase** (React 19 + TypeScript + Vite) - Production-ready, 95% complete
-- **`payroll-angular/`** - **Angular 21 migration** (standalone components + signals, ~70% complete)
-  - ✅ Simulator component complete (fully functional UI prototype with mock data)
+- **`payroll-angular/`** - **Angular 21 migration** (standalone components + signals, 95% complete)
+  - ✅ Component extraction complete (Login, EmployeeList, EmployeeForm, Payroll, Company, Dashboard)
   - ✅ Real API services complete (auth, employee, payroll, company)
   - ✅ HTTP interceptor with JWT handling complete
-  - ✅ Real-backend component complete (571 lines, all features)
-  - 🔄 Final integration and testing in progress
+  - ✅ Router setup with auth guards complete
+  - ✅ Shared components (toast, loading spinner)
+  - 🔄 Final integration testing with real backend
 
 **Backend API**: Spring Boot 3.5.6 + Java 24 at `http://localhost:20001/pms/api/v1` (separate repository)
+
+**Critical Context**: This is a tightly-scoped business application with FIXED salary formulas and employee constraints - these are not flexible requirements but core business rules that drive the entire system architecture.
 
 ## Critical Business Rules (DO NOT MODIFY)
 
@@ -55,9 +58,12 @@ npm run preview         # Preview production build
 ```powershell
 cd payroll-angular
 npm install
-npm start               # Development server (http://localhost:4200) - uses 'start' not 'ng serve'
+npm start               # Development server (http://localhost:4200) - equivalent to 'ng serve'
 npm run build          # Production build
+npm run watch          # Build with watch mode for development
 ```
+
+**Important**: Angular dev server must have backend running at `localhost:20001` or will encounter CORS/connection errors. No mock API mode in Angular (only React has this feature).
 
 ### API Mode Switching (React Frontend Only)
 Toggle in `payroll-frontend/src/config/index.ts`:
@@ -112,21 +118,26 @@ components/
 
 **Current Architecture** (✅ Component Extraction Complete):
 - `payroll-angular/src/app/components/` - ✅ Fully extracted component structure:
-  - `auth/login.component` - Login with JWT authentication
-  - `employee/employee-list.component` - List with sorting & pagination
-  - `employee/employee-form.component` - Add/Edit forms
-  - `payroll/payroll-process.component` - Salary calculation & transfer
-  - `company/company-account.component` - Balance & top-up
-  - `dashboard/dashboard.component` - Main container with routing
-  - `shared/` - Toast messages & loading spinner
-- `payroll-angular/src/app/services/` - ✅ Complete injectable services (auth, employee, payroll, company)
-- `payroll-angular/src/app/interceptors/` - ✅ HTTP interceptor with JWT injection
-- `payroll-angular/src/app/guards/` - ✅ Auth guard for protected routes
-- `payroll-angular/src/app/app.routes.ts` - ✅ Complete routing configuration
-- `payroll-angular/src/app/simulator/` - ✅ Standalone UI prototype (unchanged)
-- `payroll-angular/src/app/real-backend.component.ts` - ⚠️ Legacy (replaced by component structure)
+  - `auth/login.component.ts` - Login with JWT authentication
+  - `employee/employee-list.component.ts` - List with sorting & pagination
+  - `employee/employee-form.component.ts` - Add/Edit forms with validation
+  - `payroll/payroll-process.component.ts` - Salary calculation & transfer
+  - `company/company-account.component.ts` - Balance & top-up
+  - `dashboard/dashboard.component.ts` - Main container with routing
+  - `shared/toast-message.component.ts` - Toast notifications
+  - `shared/loading-spinner.component.ts` - Loading overlay
+- `payroll-angular/src/app/services/` - ✅ Complete injectable services:
+  - `auth.service.ts` - JWT login, token storage, /me profile fetch
+  - `employee.service.ts` - Employee CRUD with salary calculations
+  - `payroll.service.ts` - Payroll calculation & batch transfers
+  - `company.service.ts` - Company account balance & top-up
+- `payroll-angular/src/app/interceptors/auth.interceptor.ts` - ✅ JWT Bearer token injection
+- `payroll-angular/src/app/guards/auth.guard.ts` - ✅ Route protection (checks localStorage)
+- `payroll-angular/src/app/app.routes.ts` - ✅ Complete routing: `/login`, `/dashboard/*` with child routes
+- `payroll-angular/src/app/simulator/` - ✅ Standalone UI prototype (mock data, independent)
+- `payroll-angular/src/app/real-backend.component.ts` - ⚠️ Legacy monolithic component (replaced by modular structure above)
 
-**Status**: Migration 95% complete - All components extracted, routing configured, ready for final testing
+**Status**: Migration 95% complete - All components extracted, routing configured, ready for final integration testing with backend
 
 ## API Integration
 
@@ -158,7 +169,30 @@ GET  /company/transactions                 # Transaction history
 
 **Detailed Documentation**: `docs/api-documentation.md`, `payroll-frontend/docs/api-endpoints.md`
 
-## File System Navigation
+## Workspace Structure & Navigation
+
+**Root Level**:
+- `development.md` - Master dev plan, domain model, backend structure (625 lines - READ THIS FIRST for architecture)
+- `ANGULAR_MIGRATION_MASTER_PLAN.md` - Complete React→Angular migration strategy with 1:1 component mappings
+- `docs/` - Cross-cutting documentation (API reference, implementation status)
+- `payroll-frontend/` - React app (primary codebase)
+- `payroll-angular/` - Angular app (migration target)
+
+**Working in React** (`payroll-frontend/`):
+- Start here: `payroll-frontend/src/config/index.ts` - Toggle `USE_MOCK_API` for dev mode
+- Business logic: `payroll-frontend/src/utils/salaryCalculator.ts` - ALL salary calculations (NEVER duplicate)
+- API layer: `payroll-frontend/src/services/api.ts` - Dynamically loads mock vs real API
+- Mock data: `payroll-frontend/src/mocks/mockAPI.ts` - 10 predefined employees for offline dev
+- Entry point: `payroll-frontend/src/App.tsx` → imports `App-real-backend.tsx`
+- Context providers: `payroll-frontend/src/contexts/` - Auth, Employee, Company, StatusMessage
+
+**Working in Angular** (`payroll-angular/`):
+- Read first: `payroll-angular/AGENTS.md` - Angular 21 best practices (canonical reference)
+- Components: `payroll-angular/src/app/components/` - Modular structure (auth, employee, payroll, company, dashboard, shared)
+- Services: `payroll-angular/src/app/services/` - Injectable services with signals
+- Routing: `payroll-angular/src/app/app.routes.ts` - `/login`, `/dashboard/*` with guards
+- Interceptor: `payroll-angular/src/app/interceptors/auth.interceptor.ts` - Auto-adds JWT to requests
+- Entry: `payroll-angular/src/app/app.ts` - Root component with `<router-outlet>`
 
 ### Critical Files (React)
 - `payroll-frontend/src/utils/salaryCalculator.ts` - **Core business logic** (salary formula, validation)
@@ -166,6 +200,13 @@ GET  /company/transactions                 # Transaction history
 - `payroll-frontend/src/services/api.ts` - Real API integration with JWT handling
 - `payroll-frontend/src/mocks/mockAPI.ts` - Development mock data (10 employees)
 - `payroll-frontend/src/App.tsx` - Main router, imports `App-real-backend.tsx`
+
+### Critical Files (Angular)
+- `payroll-angular/AGENTS.md` - **Must-read** Angular 21 patterns (signals, inject, control flow)
+- `payroll-angular/src/app/services/auth.service.ts` - Login flow: `/auth/login` → store tokens → `/auth/me` → store profile
+- `payroll-angular/src/app/interceptors/auth.interceptor.ts` - Injects `Bearer ${token}` header automatically
+- `payroll-angular/src/app/guards/auth.guard.ts` - Checks `localStorage.accessToken` before route activation
+- `payroll-angular/src/environments/environment.ts` - API base URL configuration
 
 ### Documentation
 - `README.md` - Project overview, quick start, architecture
@@ -187,8 +228,10 @@ GET  /company/transactions                 # Transaction history
 4. **Mock vs Real API** - When debugging, verify `USE_MOCK_API` setting in `payroll-frontend/src/config/index.ts`
 5. **Employee ID validation** - Must be exactly 4 digits (enforced in `validateEmployeeId()`)
 6. **Angular standalone** - Never explicitly set `standalone: true` (it's the default in Angular 21)
-7. **API response format** - All endpoints return `{ success: boolean, message: string, data: T }` - always check `success` before accessing `data`
-8. **Protected routes** - All endpoints except `/auth/login` and `/auth/refresh` require JWT Bearer token in Authorization header
+7. **Angular signals** - Use `update()` or `set()` to modify signals, NEVER use `mutate()` (doesn't exist)
+8. **API response format** - All endpoints return `{ success: boolean, message: string, data: T }` - always check `success` before accessing `data`
+9. **Protected routes** - All endpoints except `/auth/login` and `/auth/refresh` require JWT Bearer token in Authorization header
+10. **Terminal commands** - This is Windows PowerShell - use `;` to join commands (NOT `&&`), use backslash escaping for special chars
 
 ## Testing & Debugging
 
@@ -200,19 +243,33 @@ GET  /company/transactions                 # Transaction history
 
 **Console Logging**: Request/response interceptors log all API calls in development mode
 
-## Project Status
+## Project Status (November 2025)
 
 - **React Frontend**: 95% complete, production-ready, real API integrated
+  - ✅ All CRUD operations working
+  - ✅ JWT authentication with token refresh
+  - ✅ Mock API mode for offline development
+  - ✅ Context-based state management
+  - ✅ Salary calculations with grade validation
+  - ⚠️ No automated tests yet (see `payroll-frontend/src/utils/integrationTester.ts` for manual testing)
+
 - **Angular Frontend**: 95% complete, component-based architecture ready
-  - ✅ Simulator (standalone UI prototype with mock data)
+  - ✅ Simulator (standalone UI prototype with mock data in `src/app/simulator/`)
   - ✅ Real API services (auth, employee, payroll, company)
   - ✅ HTTP interceptor with JWT injection
   - ✅ Component extraction (Login, EmployeeList, EmployeeForm, Payroll, Company, Dashboard)
   - ✅ Router setup (complete routing with auth guards)
   - ✅ Shared components (toast, loading spinner)
-  - 🔄 Final integration testing with real backend
+  - 🔄 Final integration testing with real backend (components ready, need E2E validation)
+
 - **Backend Integration**: Complete, JWT authentication working
-- **Known Issues**: None blocking, see `docs/IMPLEMENTATION_STATUS.md` and `docs/angular-migration/COMPONENT-EXTRACTION-COMPLETE.md`
+  - ✅ Spring Boot 3.5.6 API at `localhost:20001`
+  - ✅ All endpoints documented in `docs/api-documentation.md`
+  - ✅ Response format: `{ success, message, data }`
+
+- **Known Issues**: None blocking
+  - See `docs/IMPLEMENTATION_STATUS.md` for detailed feature tracking
+  - See `docs/angular-migration/COMPONENT-EXTRACTION-COMPLETE.md` for Angular migration status
 
 ## When Making Changes
 
