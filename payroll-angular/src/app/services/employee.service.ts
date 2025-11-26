@@ -12,15 +12,19 @@ export class EmployeeService {
   private http = inject(HttpClient);
   private apiUrl = environment.apiUrl;
 
-  getAll(): Observable<Employee[]> {
-    return this.http.get<any>(`${this.apiUrl}/employees`).pipe(
+  getAll(status?: string, companyId?: string, page?: number, size?: number): Observable<any> {
+    const params: any = {};
+    if (status) params.status = status;
+    if (companyId) params.companyId = companyId;
+    if (page !== undefined) params.page = page;
+    if (size !== undefined) params.size = size;
+    const query = Object.keys(params).map(k => `${k}=${encodeURIComponent(params[k])}`).join('&');
+    const url = query ? `${this.apiUrl}/employees?${query}` : `${this.apiUrl}/employees`;
+    return this.http.get<any>(url).pipe(
       map(response => {
         console.log('employeeService.getAll raw response:', response);
-        if (Array.isArray(response)) return response;
-        if (Array.isArray(response.data)) return response.data;
-        if (Array.isArray(response.content)) return response.content;
-        if (response.data && Array.isArray(response.data.content)) return response.data.content;
-        return [];
+        // Return full response (may include pagination)
+        return response;
       })
     );
   }

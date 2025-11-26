@@ -46,13 +46,17 @@ export class AuthService {
         console.log('🔄 Calling /me...');
         return this.getCurrentUserProfile().pipe(
           map(userProfile => {
-            // Store user profile
+            // Store user profile and all necessary data
             if (typeof window !== 'undefined' && window.localStorage) {
               window.localStorage.setItem('userProfile', JSON.stringify(userProfile));
               window.localStorage.setItem('user', JSON.stringify(userProfile.user));
               window.localStorage.setItem('userRole', userProfile.user.role);
+              // Store additional data for quick access
+              if (userProfile.companyId) window.localStorage.setItem('companyId', userProfile.companyId);
+              if (userProfile.bizId) window.localStorage.setItem('bizId', userProfile.bizId);
+              if (userProfile.account) window.localStorage.setItem('userAccount', JSON.stringify(userProfile.account));
             }
-            console.log('✅ User stored:', userProfile.user);
+            console.log('✅ User stored:', userProfile.user, 'Company:', userProfile.companyId, 'BizId:', userProfile.bizId);
             
             return {
               token: loginData.accessToken,

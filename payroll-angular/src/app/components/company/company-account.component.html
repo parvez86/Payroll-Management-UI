@@ -11,24 +11,76 @@
     </button>
   </div>
 
-  <div class="info-section">
-    <h3 class="subsection-title">Account Information</h3>
-    <div class="info-grid">
-      <div class="info-item">
-        <div class="info-label">Company ID</div>
-        <div class="info-value">{{ companyId() }}</div>
-      </div>
-      <div class="info-item">
-        <div class="info-label">Account Status</div>
-        <div class="info-value">
-          @if (balance() >= 0) {
-            <span class="status-active">✅ Active</span>
-          } @else {
-            <span class="status-warning">⚠️ Low Balance</span>
+  <!-- Expandable Account Information -->
+  <div class="info-section" style="margin-top: 24px; border: 2px solid #e0e7ff; border-radius: 12px; overflow: hidden;">
+    <button 
+      (click)="showAccountDetails.set(!showAccountDetails())"
+      class="expandable-header"
+      style="width: 100%; padding: 16px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-size: 16px; font-weight: 600;">
+      <span>📊 Account Information</span>
+      <span style="font-size: 20px;">{{ showAccountDetails() ? '▼' : '▶' }}</span>
+    </button>
+    
+    @if (showAccountDetails()) {
+      <div class="account-details" style="padding: 20px; background: #f8f9fa;">
+        <div class="info-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+          @if (accountInfo?.accountName) {
+            <div class="info-item">
+              <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">💼 Account Name</div>
+              <div class="info-value" style="font-size: 15px; color: #212529; font-weight: 500;">{{ accountInfo.accountName }}</div>
+            </div>
+          }
+          @if (accountInfo?.accountNumber) {
+            <div class="info-item">
+              <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">🔢 Account Number</div>
+              <div class="info-value" style="font-size: 15px; color: #212529; font-weight: 500; font-family: monospace;">{{ accountInfo.accountNumber }}</div>
+            </div>
+          }
+          @if (accountInfo?.accountType) {
+            <div class="info-item">
+              <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">🏦 Account Type</div>
+              <div class="info-value" style="font-size: 15px; color: #212529; font-weight: 500;">{{ accountInfo.accountType }}</div>
+            </div>
+          }
+          @if (accountInfo?.currentBalance !== undefined) {
+            <div class="info-item">
+              <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">💰 Current Balance</div>
+              <div class="info-value" style="font-size: 15px; color: #28a745; font-weight: 600;">{{ formatCurrency(accountInfo.currentBalance) }}</div>
+            </div>
+          }
+          @if (accountInfo?.overdraftLimit !== undefined && accountInfo.overdraftLimit > 0) {
+            <div class="info-item">
+              <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">🚨 Overdraft Limit</div>
+              <div class="info-value" style="font-size: 15px; color: #dc3545; font-weight: 500;">{{ formatCurrency(accountInfo.overdraftLimit) }}</div>
+            </div>
+          }
+          @if (accountInfo?.branchName) {
+            <div class="info-item">
+              <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">🏪 Branch</div>
+              <div class="info-value" style="font-size: 15px; color: #212529; font-weight: 500;">{{ accountInfo.branchName }}</div>
+            </div>
+          }
+          @if (accountInfo?.status) {
+            <div class="info-item">
+              <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">✅ Status</div>
+              <div class="info-value">
+                @if (accountInfo.status === 'ACTIVE') {
+                  <span style="display: inline-block; padding: 4px 12px; background: #d4edda; color: #155724; border-radius: 12px; font-size: 13px; font-weight: 600;">✅ ACTIVE</span>
+                } @else {
+                  <span style="display: inline-block; padding: 4px 12px; background: #f8d7da; color: #721c24; border-radius: 12px; font-size: 13px; font-weight: 600;">⚠️ {{ accountInfo.status }}</span>
+                }
+              </div>
+            </div>
+          }
+          @if (accountInfo?.ownerType) {
+            <div class="info-item">
+              <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">👤 Owner Type</div>
+              <div class="info-value" style="font-size: 15px; color: #212529; font-weight: 500;">{{ accountInfo.ownerType }}</div>
+            </div>
           }
         </div>
       </div>
-    </div>
+    }
   </div>
 
   <!-- Top-up Modal -->

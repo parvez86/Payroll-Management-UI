@@ -22,16 +22,55 @@ export class CompanyAccountComponent implements OnInit {
   companyId = signal('');
   balance = signal(0);
   companyName = signal('');
+  accountInfo: any = null;
+  showAccountDetails = signal(true);
+  isEmployee = signal(false);
 
   ngOnInit() {
+    this.checkUserRole();
     this.loadCompanyData();
+  }
+
+  checkUserRole() {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const role = window.localStorage.getItem('userRole');
+      this.isEmployee.set(role === 'EMPLOYEE');
+    }
   }
 
   loadCompanyData() {
     this.loading.set(true);
-    this.employeeService.getAll().subscribe({
-      next: (data) => {
-        if (data.length > 0 && data[0].company) {
+    
+    // Load from userProfile first
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const userProfileStr = window.localStorage.getItem('userProfile');
+      if (userProfileStr) {
+        try {
+          const profile = JSON.parse(userProfileStr);
+          if (profile.account) {
+            this.accountInfo = profile.account;
+            this.balance.set(profile.account.currentBalance || 0);
+          }
+          if (profile.companyId) {
+            this.companyId.set(profile.companyId);
+            // Load company details for admin/employer
+            if (!this.isEmployee()) {
+              this.loadCompany(profile.companyId);
+            }
+          }
+          this.loading.set(false);
+          return;
+        } catch (e) {
+          console.error('Failed to parse userProfile:', e);
+        }
+      }
+    }
+    
+    // Fallback for admin/employer
+    this.employeeService.getAll('ACTIVE', undefined, 0, 1).subscribe({
+      next: (response: any) => {
+        const data = response?.content || response;
+        if (Array.isArray(data) && data.length > 0 && data[0].company) {
           this.companyId.set(data[0].company.id);
           this.loadCompany(data[0].company.id);
         }

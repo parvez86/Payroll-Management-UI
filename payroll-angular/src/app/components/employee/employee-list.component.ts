@@ -25,10 +25,13 @@ export class EmployeeListComponent implements OnInit {
   employees = signal<Employee[]>([]);
   loading = signal(false);
   sortConfig = signal<{key: string, direction: 'asc' | 'desc'} | null>(null);
+  statusFilter = signal<string>('ACTIVE');
   
   // Pagination
   currentPage = signal(0);
   pageSize = signal(5);
+  totalElements = signal(0);
+  totalPages = signal(1);
 
   // Events
   employeeDeleted = output<string>();
@@ -81,24 +84,27 @@ export class EmployeeListComponent implements OnInit {
   });
 
   paginatedEmployees = computed(() => {
-    const sorted = this.sortedEmployees();
-    const page = this.currentPage();
-    const size = this.pageSize();
-    const startIndex = page * size;
-    return sorted.slice(startIndex, startIndex + size);
-  });
-
-  totalPages = computed(() => {
-    return Math.ceil(this.sortedEmployees().length / this.pageSize());
+    // Backend handles pagination, so just return employees as-is
+    return this.employees();
   });
 
   loadEmployees() {
     this.loading.set(true);
-    this.employeeService.getAll().subscribe({
-      next: (data) => {
-        this.employees.set(data);
+    const status = this.statusFilter() === 'ALL' ? undefined : this.statusFilter();
+    this.employeeService.getAll(status, undefined, this.currentPage(), this.pageSize()).subscribe({
+      next: (response: any) => {
+        // Handle paginated response
+        if (response?.content && Array.isArray(response.content)) {
+          this.employees.set(response.content);
+          this.totalElements.set(response.totalElements || response.content.length);
+          this.totalPages.set(response.totalPages || 1);
+        } else if (Array.isArray(response)) {
+          this.employees.set(response);
+          this.totalElements.set(response.length);
+          this.totalPages.set(1);
+        }
         this.loading.set(false);
-        this.messageChanged.emit(`✅ Loaded ${data.length} employees successfully`);
+        this.messageChanged.emit(`✅ Loaded ${this.totalElements()} employees successfully`);
       },
       error: (error) => {
         console.error('Failed to load employees:', error);
@@ -106,6 +112,12 @@ export class EmployeeListComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  handleStatusChange(newStatus: string) {
+    this.statusFilter.set(newStatus);
+    this.currentPage.set(0);
+    this.loadEmployees();
   }
 
   handleSort(key: string) {
@@ -159,6 +171,7 @@ export class EmployeeListComponent implements OnInit {
     const maxPage = this.totalPages() - 1;
     if (page >= 0 && page <= maxPage) {
       this.currentPage.set(page);
+      this.loadEmployees();
     }
   }
 
@@ -166,6 +179,7 @@ export class EmployeeListComponent implements OnInit {
     const n = typeof size === 'string' ? parseInt(size, 10) : size;
     this.pageSize.set(isNaN(n as number) ? 5 : (n as number));
     this.currentPage.set(0);
+    this.loadEmployees();
   }
 
   formatCurrency(amount: number): string {

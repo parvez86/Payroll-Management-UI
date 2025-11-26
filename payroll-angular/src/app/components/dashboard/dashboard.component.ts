@@ -30,6 +30,17 @@ export class DashboardComponent implements OnInit {
   loading = signal(false);
   message = signal('');
 
+  // Role-based computed properties
+  isAdminOrEmployer = computed(() => {
+    const profile = this.userProfile();
+    return profile && (profile.user.role === 'ADMIN' || profile.user.role === 'EMPLOYER');
+  });
+
+  isEmployee = computed(() => {
+    const profile = this.userProfile();
+    return profile && profile.user.role === 'EMPLOYEE';
+  });
+
   ngOnInit() {
     // Always check and restore auth first
     this.checkAuth();
@@ -47,6 +58,13 @@ export class DashboardComponent implements OnInit {
       if (profile) {
         console.log('✅ Session restored from localStorage:', profile.user?.username);
         this.userProfile.set(profile);
+        // Load balance from profile account
+        if (profile.account?.currentBalance !== undefined) {
+          this.companyAccountBalance.set(profile.account.currentBalance);
+        }
+        if (profile.companyId) {
+          this.companyId.set(profile.companyId);
+        }
         // Session restored successfully, component will render with stored data
         return;
       }

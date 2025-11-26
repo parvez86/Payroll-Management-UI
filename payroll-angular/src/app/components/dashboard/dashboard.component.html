@@ -3,7 +3,11 @@
     <h1 class="app-title">💵 Payroll Management System</h1>
     <div class="header-actions">
       <div class="company-balance" [class.negative]="companyAccountBalance() < 0">
-        Company Balance: {{ formatCurrency(companyAccountBalance()) }}
+        @if (isEmployee()) {
+          My Balance: {{ formatCurrency(companyAccountBalance()) }}
+        } @else {
+          Company Balance: {{ formatCurrency(companyAccountBalance()) }}
+        }
       </div>
       <div class="user-info">
         👤 {{ userProfile()?.user?.username }}
@@ -24,7 +28,11 @@
       💰 Payroll
     </a>
     <a routerLink="/dashboard/company" routerLinkActive="active" class="nav-tab">
-      🏢 Company Account
+      @if (isEmployee()) {
+        💳 My Account
+      } @else {
+        🏢 Company Account
+      }
     </a>
   </nav>
 

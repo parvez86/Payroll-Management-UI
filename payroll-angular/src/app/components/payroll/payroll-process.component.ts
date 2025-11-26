@@ -27,17 +27,32 @@ export class PayrollProcessComponent implements OnInit {
   companyBalance = signal(0);
 
   ngOnInit() {
+    // Load companyId from localStorage first
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const storedCompanyId = window.localStorage.getItem('companyId');
+      if (storedCompanyId) {
+        this.companyId.set(storedCompanyId);
+        console.log('💼 CompanyId loaded from localStorage:', storedCompanyId);
+      }
+    }
     this.loadData();
   }
 
   loadData() {
     this.loading.set(true);
-    this.employeeService.getAll().subscribe({
-      next: (data) => {
-        this.employees.set(data);
-        if (data.length > 0 && data[0].company) {
+    const compId = this.companyId();
+    this.employeeService.getAll('ACTIVE', compId || undefined, 0, 100).subscribe({
+      next: (response: any) => {
+        const data = response?.content || response;
+        if (Array.isArray(data)) {
+          this.employees.set(data);
+        }
+        // Only set companyId from employee if not already set
+        if (!compId && Array.isArray(data) && data.length > 0 && data[0].company) {
           this.companyId.set(data[0].company.id);
           this.loadCompany(data[0].company.id);
+        } else if (compId) {
+          this.loadCompany(compId);
           // Get logged-in user info
           let employeeId: string | undefined = undefined;
           const userStr = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('userProfile') : null;

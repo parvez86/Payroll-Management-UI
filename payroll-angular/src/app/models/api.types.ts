@@ -110,6 +110,7 @@ export interface UserProfile {
   fullName: string;
   description?: string;
   companyId: string;
+  bizId?: string;
 }
 
 // Payroll
