@@ -5,6 +5,7 @@ import { EmployeeListComponent } from './components/employee/employee-list.compo
 import { EmployeeFormComponent } from './components/employee/employee-form.component';
 import { PayrollProcessComponent } from './components/payroll/payroll-process.component';
 import { CompanyAccountComponent } from './components/company/company-account.component';
+import { TransactionListComponent } from './components/transaction/transaction-list.component';
 import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -46,6 +47,10 @@ export const routes: Routes = [
       {
         path: 'company',
         component: CompanyAccountComponent
+      },
+      {
+        path: 'transactions',
+        component: TransactionListComponent
       }
     ]
   },

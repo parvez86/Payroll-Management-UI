@@ -8,7 +8,9 @@ import type {
   PayrollCalculationResponse,
   SalaryTransferRequest,
   SalaryTransferResponse,
-  SalarySheetResponse
+  SalarySheetResponse,
+  TransactionTransferRequest,
+  TransactionTransferResponse
 } from '../models/api.types';
 
 @Injectable({
@@ -42,6 +44,28 @@ export class PayrollService {
         if (response.success && response.data) return response.data;
         if (response.processedCount !== undefined) return response;
         return response;
+      })
+    );
+  }
+
+  // New generic transaction transfer API
+  transferTransaction(req: TransactionTransferRequest): Observable<TransactionTransferResponse> {
+    const accessToken = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('accessToken') : null;
+    const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
+    return this.http.post<any>(
+      `${this.apiUrl}/transactions/transfer`,
+      req,
+      { headers }
+    ).pipe(
+      map((response: any) => {
+        console.log('🔁 Transfer response:', response);
+        // Backend may wrap or return plain object
+        if (response?.success && response?.data) return response.data;
+        return response;
+      }),
+      catchError((error) => {
+        console.error('❌ Transfer failed:', error);
+        throw error;
       })
     );
   }

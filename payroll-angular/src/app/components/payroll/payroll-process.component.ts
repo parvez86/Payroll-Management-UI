@@ -8,6 +8,8 @@ import { formatCurrency, calculateBasicSalary } from '../../simulator/salary-cal
 import { ToastMessageComponent } from '../shared/toast-message.component';
 import { LoadingSpinnerComponent } from '../shared/loading-spinner.component';
 import type { Employee } from '../../models/api.types';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-payroll-process',
@@ -25,6 +27,7 @@ export class PayrollProcessComponent implements OnInit {
   employees = signal<Employee[]>([]);
   companyId = signal('');
   companyBalance = signal(0);
+  fundingAccountId = signal('');
 
   ngOnInit() {
     // Load companyId from localStorage first
@@ -121,6 +124,9 @@ export class PayrollProcessComponent implements OnInit {
     this.companyService.getCompany(id).subscribe({
       next: (company) => {
         this.companyBalance.set(company.mainAccount.currentBalance);
+        if (company.mainAccount?.id) {
+          this.fundingAccountId.set(company.mainAccount.id);
+        }
       },
       error: (error) => console.error('Failed to load company:', error)
     });
@@ -325,16 +331,38 @@ export class PayrollProcessComponent implements OnInit {
       sufficient: remainingToPay <= balance
     });
 
-    // FIXED: Immediately process if funds are sufficient (matching React pattern)
+    // If funds are sufficient, process payroll batch
     if (remainingToPay <= balance) {
-      console.log('✅ Sufficient funds, processing payroll immediately...');
+      console.log('✅ Sufficient funds, processing payroll batch...');
       this.loading.set(true);
+
       this.payrollService.processPayrollBatch(this.batchId()).subscribe({
         next: (response: any) => {
           this.loading.set(false);
-          this.message.set(`✅ Payroll processed successfully!`);
+          
+          // Extract status information from response
+          const batchStatus = response.batchStatus || response.status || 'UNKNOWN';
+          const successCount = response.successfulPayments || 0;
+          const failedCount = response.failedPayments || 0;
+          const totalCount = response.totalEmployees || 0;
+          const processedAmount = response.processedAmount?.amount || 0;
+          const failedAmount = response.failedAmount?.amount || 0;
+          
+          // Display comprehensive status message
+          if (batchStatus === 'COMPLETED' && failedCount === 0) {
+            this.message.set(`✅ Payroll processed successfully! ${successCount}/${totalCount} payments completed. Amount: ${formatCurrency(processedAmount)}`);
+          } else if (batchStatus === 'COMPLETED' && failedCount > 0) {
+            this.message.set(`⚠️ Payroll partially completed. Success: ${successCount}, Failed: ${failedCount}/${totalCount}. Processed: ${formatCurrency(processedAmount)}`);
+          } else if (batchStatus === 'FAILED') {
+            const errorMsg = response.message || response.errorMessages?.[0] || 'Payroll processing failed';
+            this.message.set(`❌ ${errorMsg}`);
+          } else {
+            this.message.set(`ℹ️ Payroll status: ${batchStatus}. Success: ${successCount}, Failed: ${failedCount}`);
+          }
+          
           console.log('✅ Payroll batch processed:', response);
-          // Reload data
+          
+          // Reload balances and batch info
           this.loadCompany(this.companyId());
           let employeeId: string | undefined = undefined;
           const userStr = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('userProfile') : null;
@@ -350,9 +378,19 @@ export class PayrollProcessComponent implements OnInit {
         },
         error: (error: any) => {
           console.error('❌ Failed to process payroll:', error);
-          const errorMsg = error.error?.message || 'Payroll process failed';
-          this.message.set(`❌ ${errorMsg}`);
           this.loading.set(false);
+          
+          // Extract error details
+          const errorMsg = error.error?.message || error.message || 'Payroll process failed';
+          const errorCode = error.error?.errorCode || error.error?.code || error.status || '';
+          const errorCategory = error.error?.category || '';
+          
+          // Display detailed error message
+          if (errorCode) {
+            this.message.set(`❌ ${errorMsg} (code: ${errorCode}${errorCategory ? ', ' + errorCategory : ''})`);
+          } else {
+            this.message.set(`❌ ${errorMsg}`);
+          }
         }
       });
     } else {

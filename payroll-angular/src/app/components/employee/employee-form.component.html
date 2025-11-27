@@ -31,6 +31,23 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label">Username *</label>
+            <input 
+              type="text" 
+              class="form-input"
+              [ngModel]="username()"
+              (ngModelChange)="username.set($event)"
+              name="username"
+              placeholder="Login username"
+              [readonly]="isEditMode()"
+              required
+            />
+            @if (isEditMode()) {
+              <small class="form-hint">Username cannot be changed</small>
+            }
+          </div>
+
+          <div class="form-group">
             <label class="form-label">Full Name *</label>
             <input 
               type="text" 

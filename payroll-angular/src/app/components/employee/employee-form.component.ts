@@ -34,6 +34,7 @@ export class EmployeeFormComponent implements OnInit {
   name = signal('');
   address = signal('');
   mobile = signal('');
+  username = signal('');
   email = signal('');
   password = signal('');
   gradeRank = signal(6);
@@ -89,6 +90,7 @@ export class EmployeeFormComponent implements OnInit {
         this.name.set(employee.name);
         this.address.set(employee.address);
         this.mobile.set(employee.mobile);
+        this.username.set(employee.username || '');
         this.email.set(employee.email || '');
         this.gradeRank.set(employee.grade.rank);
         this.accountName.set(employee.account?.accountName || '');
@@ -136,8 +138,12 @@ export class EmployeeFormComponent implements OnInit {
       return;
     }
 
-    // Email and password validation - only required for new employees
+    // Username, email and password validation - only required for new employees
     if (!this.isEditMode()) {
+      if (!this.username()) {
+        this.message.set('⚠️ Username is required for new employees');
+        return;
+      }
       if (!this.email()) {
         this.message.set('⚠️ Email is required for new employees');
         return;
@@ -191,14 +197,10 @@ export class EmployeeFormComponent implements OnInit {
       branchId: this.branchId()
     };
 
-    // Add email/username only if provided (required for create, optional for update)
-    if (this.email()) {
-      employeeData.username = this.email();
+    // Add username and email (required for create, not sent for update)
+    if (!this.isEditMode()) {
+      employeeData.username = this.username();
       employeeData.email = this.email();
-    }
-
-    // Add password only if provided (required for create, optional for update)
-    if (this.password()) {
       employeeData.password = this.password();
     }
 

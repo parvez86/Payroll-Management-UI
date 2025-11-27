@@ -1,0 +1,244 @@
+<div class="transaction-container">
+  <!-- Page Title -->
+  <h2 class="section-title">💳 Transaction History</h2>
+  
+  <!-- Filter Section -->
+  <div class="filter-section">
+    <div class="filter-panel">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label class="filter-label">📊 Type</label>
+          <select 
+            [ngModel]="typeFilter()" 
+            (ngModelChange)="typeFilter.set($event)"
+            class="filter-select">
+            @for (type of typeOptions; track type) {
+              <option [value]="type">{{ type }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">🏷️ Category</label>
+          <select 
+            [ngModel]="categoryFilter()" 
+            (ngModelChange)="categoryFilter.set($event)"
+            class="filter-select">
+            @for (category of categoryOptions; track category) {
+              <option [value]="category">{{ category }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">✅ Status</label>
+          <select 
+            [ngModel]="statusFilter()" 
+            (ngModelChange)="statusFilter.set($event)"
+            class="filter-select">
+            @for (status of statusOptions; track status) {
+              <option [value]="status">{{ status }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">📤 Debit Account ID</label>
+          <input 
+            type="text" 
+            [ngModel]="debitAccountId()" 
+            (ngModelChange)="debitAccountId.set($event)"
+            class="filter-input"
+            placeholder="Enter debit account ID">
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <label class="filter-label">📥 Credit Account ID</label>
+          <input 
+            type="text" 
+            [ngModel]="creditAccountId()" 
+            (ngModelChange)="creditAccountId.set($event)"
+            class="filter-input"
+            placeholder="Enter credit account ID">
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">📦 Batch ID</label>
+          <input 
+            type="text" 
+            [ngModel]="batchId()" 
+            (ngModelChange)="batchId.set($event)"
+            class="filter-input"
+            placeholder="Enter payroll batch ID">
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">📅 From Date</label>
+          <input 
+            type="date" 
+            [ngModel]="fromDate()" 
+            (ngModelChange)="fromDate.set($event)"
+            class="filter-input">
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">📅 To Date</label>
+          <input 
+            type="date" 
+            [ngModel]="toDate()" 
+            (ngModelChange)="toDate.set($event)"
+            class="filter-input">
+        </div>
+
+        <div class="filter-actions">
+          <button (click)="applyFilters()" class="btn btn-primary">
+            🔍 Apply Filters
+          </button>
+          <button (click)="resetFilters()" class="btn btn-secondary">
+            🔄 Reset
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Summary -->
+  <div class="stats-summary">
+    <div class="stat-card">
+      <div class="stat-label">Total Transactions</div>
+      <div class="stat-value">{{ totalElements() }}</div>
+    </div>
+  </div>
+
+  <!-- Transaction Table -->
+  <div class="table-wrapper">
+    <div class="table-container">
+      <table class="transaction-table">
+        <thead class="table-header">
+          <tr>
+            <th class="table-cell clickable" (click)="handleSort('processedAt')">
+              Date {{ getSortIcon('processedAt') }}
+            </th>
+            <th class="table-cell clickable" (click)="handleSort('type')">
+              Type {{ getSortIcon('type') }}
+            </th>
+            <th class="table-cell">Batch ID</th>
+            <th class="table-cell">Batch Item ID</th>
+            <th class="table-cell">Debit Account ID</th>
+            <th class="table-cell">From Account</th>
+            <th class="table-cell">Credit Account ID</th>
+            <th class="table-cell">To Account</th>
+            <th class="table-cell text-right clickable" (click)="handleSort('amount')">
+              Amount {{ getSortIcon('amount') }}
+            </th>
+            <th class="table-cell text-center clickable" (click)="handleSort('transactionStatus')">
+              Status {{ getSortIcon('transactionStatus') }}
+            </th>
+            <th class="table-cell">Description</th>
+          </tr>
+        </thead>
+      <tbody class="table-body">
+        @for (tx of transactions(); track tx.id) {
+          <tr class="table-row">
+            <td class="table-cell">
+              <div class="date-cell">
+                {{ formatDate(tx.processedAt) }}
+              </div>
+            </td>
+            <td class="table-cell">
+              <div class="type-badge" [class]="'badge-' + tx.type.toLowerCase()">
+                {{ tx.type }}
+              </div>
+              <div class="category-tag">{{ tx.category }}</div>
+            </td>
+            <td class="table-cell">
+              <div class="id-cell">{{ tx.payrollBatchId || 'N/A' }}</div>
+            </td>
+            <td class="table-cell">
+              <div class="id-cell">{{ tx.payrollItemId || 'N/A' }}</div>
+            </td>
+            <td class="table-cell">
+              <div class="id-cell">{{ tx.debitAccountId }}</div>
+            </td>
+            <td class="table-cell">
+              <div class="account-name">{{ tx.debitAccountName }}</div>
+            </td>
+            <td class="table-cell">
+              <div class="id-cell">{{ tx.creditAccountId }}</div>
+            </td>
+            <td class="table-cell">
+              <div class="account-name">{{ tx.creditAccountName }}</div>
+            </td>
+            <td class="table-cell text-right">
+              <div class="amount">{{ formatCurrency(tx.amount.amount) }}</div>
+            </td>
+            <td class="table-cell text-center">
+              <span [class]="getStatusClass(tx.transactionStatus)" class="status-badge">
+                @if (tx.transactionStatus === 'COMPLETED') {
+                  ✅
+                } @else if (tx.transactionStatus === 'PENDING') {
+                  ⏳
+                } @else if (tx.transactionStatus === 'FAILED') {
+                  ❌
+                } @else {
+                  ⚠️
+                }
+                {{ tx.transactionStatus }}
+              </span>
+            </td>
+            <td class="table-cell">
+              <div class="description">{{ tx.description }}</div>
+              <div class="reference-id">Ref: {{ tx.referenceId }}</div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="11" class="empty-state">
+              <div class="empty-icon">📭</div>
+              <div class="empty-text">No transactions found</div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination">
+    <div class="pagination-controls">
+      <span>Rows per page:</span>
+      <select 
+        [ngModel]="pageSize()" 
+        (ngModelChange)="setPageSize($event)"
+        class="page-size-select">
+        <option [value]="10">10</option>
+        <option [value]="20">20</option>
+        <option [value]="50">50</option>
+        <option [value]="100">100</option>
+      </select>
+    </div>
+    <div class="pagination-buttons">
+      <button (click)="setPage(0)" [disabled]="currentPage() === 0" class="pagination-btn">
+        ⏮️ First
+      </button>
+      <button (click)="setPage(currentPage() - 1)" [disabled]="currentPage() === 0" class="pagination-btn">
+        ← Prev
+      </button>
+      <span class="page-info">{{ currentPage() + 1 }}</span>
+      <button (click)="setPage(currentPage() + 1)" [disabled]="currentPage() >= totalPages() - 1" class="pagination-btn">
+        Next →
+      </button>
+      <button (click)="setPage(totalPages() - 1)" [disabled]="currentPage() >= totalPages() - 1" class="pagination-btn">
+        Last ⏭️
+      </button>
+      <span class="page-summary">
+        Page {{ currentPage() + 1 }} of {{ totalPages() }} ({{ totalElements() }} total)
+      </span>
+    </div>
+  </div>
+</div>
+
+<app-toast-message [message]="message()" (close)="clearMessage()" />
+<app-loading-spinner [loading]="loading()" message="Loading transactions..." />

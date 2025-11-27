@@ -204,3 +204,22 @@ export interface TransactionHistoryResponse {
   transactions: Transaction[];
   currentBalance: number;
 }
+
+// Generic transaction transfer (new API)
+export interface TransactionTransferRequest {
+  debitAccountId: string;
+  creditAccountId: string;
+  amount: number;
+  payrollBatchId?: string;
+  payrollItemId?: string;
+  transactionType: 'SALARY_DISBURSEMENT' | string;
+  transactionCategory: 'PAYROLL' | string;
+  referenceId?: string;
+}
+
+export interface TransactionTransferResponse {
+  transactionId?: string;
+  status?: string;
+  message?: string;
+  success?: boolean;
+}
