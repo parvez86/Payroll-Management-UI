@@ -65,4 +65,16 @@ export class CompanyService {
       })
     );
   }
+  
+  getAllCompanies(): Observable<BackendCompany[]> {
+    // Get all companies (ADMIN only)
+    return this.http.get<any>(`${this.apiUrl}/companies`).pipe(
+      map(response => {
+        console.log('✅ All companies loaded');
+        if (response.success && response.data) return response.data;
+        if (Array.isArray(response)) return response;
+        return [];
+      })
+    );
+  }
 }

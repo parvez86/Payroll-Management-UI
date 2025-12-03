@@ -1,6 +1,6 @@
 <div class="transaction-container">
   <!-- Page Title -->
-  <h2 class="section-title">💳 Transaction History</h2>
+  <h2 class="section-title">{{ pageTitle() }}</h2>
   
   <!-- Filter Section -->
   <div class="filter-section">
@@ -195,9 +195,20 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="11" class="empty-state">
-              <div class="empty-icon">📭</div>
-              <div class="empty-text">No transactions found</div>
+            <td colspan="11" class="empty-state-cell">
+              <div class="empty-state">
+                <div class="empty-icon">💳</div>
+                <h3 class="empty-title">No Transactions Found</h3>
+                <p class="empty-text">There are no transactions matching your current filters.</p>
+                @if (isEmployee()) {
+                  <p class="empty-hint">You can only view your own transactions and those of your team members.</p>
+                } @else if (isEmployer()) {
+                  <p class="empty-hint">Showing transactions for your company only.</p>
+                } @else if (isAdmin()) {
+                  <p class="empty-hint">Showing system-wide transactions.</p>
+                }
+                <button (click)="resetFilters()" class="btn-reset">Reset Filters</button>
+              </div>
             </td>
           </tr>
         }

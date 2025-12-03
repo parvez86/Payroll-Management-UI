@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
@@ -12,34 +12,33 @@ export class EmployeeService {
   private http = inject(HttpClient);
   private apiUrl = environment.apiUrl;
 
-  getAll(status?: string, companyId?: string, page?: number, size?: number): Observable<any> {
-    const params: any = {};
-    if (status) params.status = status;
-    if (companyId) params.companyId = companyId;
-    if (page !== undefined) params.page = page;
-    if (size !== undefined) params.size = size;
-    const query = Object.keys(params).map(k => `${k}=${encodeURIComponent(params[k])}`).join('&');
-    const url = query ? `${this.apiUrl}/employees?${query}` : `${this.apiUrl}/employees`;
-    return this.http.get<any>(url).pipe(
+  getAll(status: string, companyId: string, page: number, size: number): Observable<any> {
+    // Always use filtered API for employee list retrieval
+    const params = new HttpParams()
+      .set('status', status)
+      .set('companyId', companyId)
+      .set('page', page.toString())
+      .set('size', size.toString());
+    return this.http.get<any>(`${this.apiUrl}/employees`, { params }).pipe(
       map(response => {
         console.log('employeeService.getAll raw response:', response);
-        // Return full response (may include pagination)
         return response;
       })
     );
   }
 
-  getById(id: string): Observable<Employee> {
+  getById(id: string, companyId: string): Observable<Employee> {
+    // Use filtered API for single employee retrieval
+    const params = new HttpParams().set('companyId', companyId);
     return this.http.get<any>(
-      `${this.apiUrl}/employees/${id}`
+      `${this.apiUrl}/employees/${id}`,
+      { params }
     ).pipe(
       map(response => {
         console.log('📡 Employee getById response:', response);
-        // Backend returns employee object directly
         if (response && response.id) {
           return response;
         }
-        // Check if wrapped in success format
         if (response.success && response.data) {
           return response.data;
         }
@@ -48,19 +47,20 @@ export class EmployeeService {
     );
   }
 
-  create(employee: Partial<Employee>): Observable<Employee> {
+  create(employee: Partial<Employee>, companyId: string): Observable<Employee> {
+    // Use filtered API for employee creation
+    const params = new HttpParams().set('companyId', companyId);
     return this.http.post<any>(
       `${this.apiUrl}/employees`,
-      employee
+      employee,
+      { params }
     ).pipe(
       map(response => {
         console.log('✅ Employee create response:', response);
-        // Backend returns employee object directly, not wrapped
         if (response && response.id) {
           console.log('✅ Employee created:', response.code);
           return response;
         }
-        // Check if wrapped in success format
         if (response.success && response.data) {
           console.log('✅ Employee created:', response.data.code);
           return response.data;
@@ -70,19 +70,20 @@ export class EmployeeService {
     );
   }
 
-  update(id: string, employee: Partial<Employee>): Observable<Employee> {
+  update(id: string, employee: Partial<Employee>, companyId: string): Observable<Employee> {
+    // Use filtered API for employee update
+    const params = new HttpParams().set('companyId', companyId);
     return this.http.put<any>(
       `${this.apiUrl}/employees/${id}`,
-      employee
+      employee,
+      { params }
     ).pipe(
       map(response => {
         console.log('📡 Employee update response:', response);
-        // Backend returns employee object directly
         if (response && response.id) {
           console.log('✅ Employee updated:', response.code);
           return response;
         }
-        // Check if wrapped in success format
         if (response.success && response.data) {
           console.log('✅ Employee updated:', id);
           return response.data;
@@ -92,9 +93,12 @@ export class EmployeeService {
     );
   }
 
-  delete(id: string): Observable<void> {
+  delete(id: string, companyId: string): Observable<void> {
+    // Use filtered API for employee deletion
+    const params = new HttpParams().set('companyId', companyId);
     return this.http.delete<APIResponse<void>>(
-      `${this.apiUrl}/employees/${id}`
+      `${this.apiUrl}/employees/${id}`,
+      { params }
     ).pipe(
       map(response => {
         if (response.success) {

@@ -25,6 +25,42 @@
   gap: 1.5rem;
 }
 
+.company-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+}
+
+.selector-label {
+  font-size: 1.2rem;
+  color: white;
+}
+
+.company-select {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #495057;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.company-select:hover {
+  background: white;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.company-select:focus {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
 .company-balance {
   background: rgba(255, 255, 255, 0.2);
   padding: 0.75rem 1.5rem;
@@ -42,6 +78,33 @@
   padding: 0.75rem 1.5rem;
   border-radius: 10px;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.role-badge {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.role-badge.role-admin {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.role-badge.role-employer {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.role-badge.role-employee {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
 }
 
 .logout-button {
@@ -69,6 +132,28 @@
   text-align: center;
   font-weight: 600;
   color: #047857;
+}
+
+.role-info-banner {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
+  padding: 0.875rem 2rem;
+  margin: 0 2rem 1rem 2rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  border-left: 4px solid #3b82f6;
+}
+
+.info-icon {
+  font-size: 1.25rem;
+}
+
+.info-text {
+  font-weight: 500;
 }
 
 .nav-tabs {

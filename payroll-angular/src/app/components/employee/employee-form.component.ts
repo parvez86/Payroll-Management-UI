@@ -84,7 +84,8 @@ export class EmployeeFormComponent implements OnInit {
 
   loadEmployee(id: string) {
     this.loading.set(true);
-    this.employeeService.getById(id).subscribe({
+    const companyId = this.getCompanyId();
+    this.employeeService.getById(id, companyId).subscribe({
       next: (employee) => {
         this.code.set(employee.code);
         this.name.set(employee.name);
@@ -206,10 +207,12 @@ export class EmployeeFormComponent implements OnInit {
 
     if (this.isEditMode() && this.employeeId()) {
       // Update existing
-      this.employeeService.update(this.employeeId()!, employeeData).subscribe({
+      this.employeeService.update(this.employeeId()!, employeeData, this.getCompanyId()).subscribe({
         next: () => {
           this.message.set(`✅ Employee ${this.code()} updated successfully`);
-          setTimeout(() => this.router.navigate(['/dashboard/employees']), 1500);
+          setTimeout(() => {
+            this.router.navigate(['/dashboard/employees'], { queryParams: { page: 0 } });
+          }, 1500);
         },
         error: (error) => {
           console.error('Failed to update employee:', error);
@@ -220,10 +223,12 @@ export class EmployeeFormComponent implements OnInit {
       });
     } else {
       // Create new
-      this.employeeService.create(employeeData).subscribe({
+      this.employeeService.create(employeeData, this.getCompanyId()).subscribe({
         next: () => {
           this.message.set(`✅ Employee ${this.code()} added successfully`);
-          setTimeout(() => this.router.navigate(['/dashboard/employees']), 1500);
+          setTimeout(() => {
+            this.router.navigate(['/dashboard/employees'], { queryParams: { page: 0 } });
+          }, 1500);
         },
         error: (error) => {
           console.error('Failed to add employee:', error);
@@ -233,6 +238,20 @@ export class EmployeeFormComponent implements OnInit {
         }
       });
     }
+  }
+
+  getCompanyId(): string {
+    // Get companyId from user profile or context
+    const userProfileStr = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('userProfile') : null;
+    if (userProfileStr) {
+      try {
+        const userProfile = JSON.parse(userProfileStr);
+        return userProfile.companyId || '';
+      } catch (e) {
+        console.error('Failed to parse user profile:', e);
+      }
+    }
+    return '';
   }
 
   onCancel() {

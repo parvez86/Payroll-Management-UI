@@ -109,8 +109,9 @@ export interface UserProfile {
   };
   fullName: string;
   description?: string;
-  companyId: string;
-  bizId?: string;
+  companyId: string;        // Primary/default company (backward compatible)
+  companyIds?: Array<{ companyId: string; companyName: string }>; // All companies user has access to (ADMIN/EMPLOYER can have multiple)
+  bizId?: string;           // Employee code
 }
 
 // Payroll

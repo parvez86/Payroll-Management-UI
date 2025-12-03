@@ -187,6 +187,23 @@
   grid-template-columns: repeat(3, 1fr);
 }
 
+.salary-overview.grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 1200px) {
+  .salary-overview.grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .salary-overview,
+  .salary-overview.grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
 .overview-card {
   background: white;
   padding: 1.5rem;
@@ -730,4 +747,58 @@
 
 .topup-btn {
   min-width: 200px;
+}
+
+/* Empty State */
+.empty-state-cell {
+  padding: 4rem 2rem !important;
+  text-align: center;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  opacity: 0.5;
+}
+
+.empty-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #374151;
+  margin: 0;
+}
+
+.empty-text {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.btn-create-batch {
+  margin-top: 1rem;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-create-batch:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.btn-create-batch:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

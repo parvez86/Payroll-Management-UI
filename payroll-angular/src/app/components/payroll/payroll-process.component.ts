@@ -1,9 +1,12 @@
 import { Component, signal, computed, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PayrollService } from '../../services/payroll.service';
 import { CompanyService } from '../../services/company.service';
 import { EmployeeService } from '../../services/employee.service';
+import { CompanySelectionService } from '../../services/company-selection.service';
+import { UserContextService } from '../../services/user-context.service';
 import { formatCurrency, calculateBasicSalary } from '../../simulator/salary-calculator';
 import { ToastMessageComponent } from '../shared/toast-message.component';
 import { LoadingSpinnerComponent } from '../shared/loading-spinner.component';
@@ -20,54 +23,111 @@ import { catchError } from 'rxjs/operators';
   styleUrls: ['./payroll-process.component.css']
 })
 export class PayrollProcessComponent implements OnInit {
+      companyName = computed(() => {
+        // Always use the selected company from global selection
+        const id = this.companySelection.selectedCompanyId();
+        if (!id) return '';
+        const companies = this.userContext.companyNames();
+        const found = companies.find(c => c.id === id);
+        return found ? found.name : '';
+      });
+    // Always reload payroll data on tab activation and company change
   private payrollService = inject(PayrollService);
   private companyService = inject(CompanyService);
   private employeeService = inject(EmployeeService);
+  userContext = inject(UserContextService);
+  companySelection = inject(CompanySelectionService);
 
   employees = signal<Employee[]>([]);
-  companyId = signal('');
+  // Remove companyId signal, use only companySelection.selectedCompanyId
   companyBalance = signal(0);
   fundingAccountId = signal('');
+  
+  // Role checks using UserContextService
+  isEmployeeUser = computed(() => this.userContext.isEmployee());
+  isAdmin = computed(() => this.userContext.isAdmin());
+  isEmployer = computed(() => this.userContext.isEmployer());
+  canProcessPayroll = computed(() => this.userContext.canProcessPayroll());
 
   ngOnInit() {
-    // Load companyId from localStorage first
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const storedCompanyId = window.localStorage.getItem('companyId');
-      if (storedCompanyId) {
-        this.companyId.set(storedCompanyId);
-        console.log('💼 CompanyId loaded from localStorage:', storedCompanyId);
-      }
-    }
-    this.loadData();
+    // Restore global company selection
+    this.companySelection.restoreFromStorage();
+    // No effect() here!
   }
+  // Always reload payroll data on tab activation and company change
+  private companyEffect = effect(() => {
+    // Always use the selected company from global selection
+    const selectedCompanyId = this.companySelection.selectedCompanyId();
+    if (!selectedCompanyId) {
+      this.employees.set([]);
+      return;
+    }
+    this.loading.set(true);
+    this.employeeService.getAll('ACTIVE', selectedCompanyId, 0, 100).subscribe({
+      next: (response: any) => {
+        const data = response?.content || response;
+        if (Array.isArray(data)) {
+          this.employees.set(data);
+        } else {
+          this.employees.set([]);
+        }
+        this.loading.set(false);
+        // Optionally, reload batch info for the selected company
+        this.loadLastBatch(selectedCompanyId);
+      },
+      error: () => {
+        this.employees.set([]);
+        this.loading.set(false);
+      }
+    });
+  });
+
+  // Disable payroll operations when "All Companies" is selected globally
+  isAllCompaniesSelected = computed(() => this.companySelection.isAllCompaniesSelected());
 
   loadData() {
     this.loading.set(true);
-    const compId = this.companyId();
-    this.employeeService.getAll('ACTIVE', compId || undefined, 0, 100).subscribe({
+    // Always use the selected company from global selection
+    const effectiveCompanyId = this.companySelection.selectedCompanyId();
+    this.employeeService.getAll('ACTIVE', effectiveCompanyId, 0, 100).subscribe({
       next: (response: any) => {
         const data = response?.content || response;
         if (Array.isArray(data)) {
           this.employees.set(data);
         }
-        // Only set companyId from employee if not already set
-        if (!compId && Array.isArray(data) && data.length > 0 && data[0].company) {
-          this.companyId.set(data[0].company.id);
-          this.loadCompany(data[0].company.id);
-        } else if (compId) {
-          this.loadCompany(compId);
-          // Get logged-in user info
+        // If we are in ALL mode and have employees, capture first company for balance display
+        if (this.companySelection.isAllCompaniesSelected() && !this.companySelection.selectedCompanyId() && Array.isArray(data) && data.length > 0 && data[0]?.company?.id) {
+          const firstCompanyId = data[0].company.id;
+          this.companySelection.setSelectedCompany(firstCompanyId);
+          this.loadCompany(firstCompanyId);
+          
+          // Get logged-in user info for EMPLOYEE role
           let employeeId: string | undefined = undefined;
           const userStr = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('userProfile') : null;
           if (userStr) {
             try {
               const user = JSON.parse(userStr);
-              if (user && user.user && user.user.role === 'EMPLOYEE') {
+              if (user?.user?.role === 'EMPLOYEE') {
                 employeeId = user.user.id;
               }
             } catch {}
           }
-          this.loadLastBatch(data[0].company.id, employeeId);
+          this.loadLastBatch(firstCompanyId, employeeId);
+        } else if (this.companySelection.selectedCompanyId()) {
+          // Normal single-company mode
+          let employeeId: string | undefined = undefined;
+          const userStr = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('userProfile') : null;
+          if (userStr) {
+            try {
+              const user = JSON.parse(userStr);
+              if (user?.user?.role === 'EMPLOYEE') {
+                employeeId = user.user.id;
+              }
+            } catch {}
+          }
+          const selectedCompanyId = this.companySelection.selectedCompanyId();
+          this.loadCompany(selectedCompanyId);
+          this.loadLastBatch(selectedCompanyId, employeeId);
         }
         this.loading.set(false);
       },
@@ -93,19 +153,23 @@ export class PayrollProcessComponent implements OnInit {
           this.payrollService.getPayrollItems(batch.id, employeeId).subscribe({
             next: (items: any[]) => {
               this.batchItems.set(items || []);
+              this.computeEmployeeTotals();
             },
             error: (err: any) => {
               this.batchItems.set([]);
               console.error('Failed to load payroll items:', err);
+              this.computeEmployeeTotals();
             }
           });
         } else {
           this.resetBatchInfo();
+          this.computeEmployeeTotals();
         }
       },
       error: (error: any) => {
         console.log('ℹ️ No last batch found:', error);
         this.resetBatchInfo();
+        this.computeEmployeeTotals();
       }
     });
   }
@@ -197,6 +261,83 @@ export class PayrollProcessComponent implements OnInit {
     return len === 0 ? 1 : Math.ceil(len / size);
   });
 
+  // EMPLOYEE totals
+  ownTotalPaid = signal(0);
+  ownTotalUnpaid = signal(0);
+  downstreamTotalPaid = signal(0);
+  downstreamTotalUnpaid = signal(0);
+  
+  // Role-based overview metrics
+  overviewMetrics = computed(() => {
+    const role = this.userContext.userRole();
+    const batch = this.batchData();
+    
+    switch(role) {
+      case 'ADMIN':
+        // TODO: Implement system-wide stats from backend
+        return [
+          { label: 'TOTAL PAY TO BE', value: batch?.totalAmount?.amount || 0, color: 'yellow' },
+          { label: 'TOTAL PAID', value: batch?.executedAmount?.amount || 0, color: 'green' },
+          { label: 'COMPANY BALANCE', value: this.companyBalance(), color: 'purple' }
+        ];
+        
+      case 'EMPLOYER':
+        return [
+          { label: 'PAY TO BE AMOUNT', value: batch?.totalAmount?.amount || 0, color: 'yellow' },
+          { label: 'TOTAL PAID AMOUNT', value: batch?.executedAmount?.amount || 0, color: 'green' },
+          { label: 'COMPANY ACCOUNT BALANCE', value: this.companyBalance(), color: 'purple', danger: this.companyBalance() < (batch?.totalAmount?.amount || 0) }
+        ];
+        
+      case 'EMPLOYEE':
+        return [
+          { label: 'MY PAID AMOUNT', value: this.ownTotalPaid(), color: 'green' },
+          { label: 'MY UNPAID AMOUNT', value: this.ownTotalUnpaid(), color: 'yellow' },
+          { label: 'DOWNSTREAM PAID', value: this.downstreamTotalPaid(), color: 'green' },
+          { label: 'DOWNSTREAM UNPAID', value: this.downstreamTotalUnpaid(), color: 'yellow' }
+        ];
+        
+      default:
+        return [];
+    }
+  });
+
+  private computeEmployeeTotals() {
+    const items = this.batchItems();
+    let myEmployeeId: string | null = null;
+    let myGradeRank: number | null = null;
+    const userStr = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('userProfile') : null;
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u && u.user && u.user.role === 'EMPLOYEE') {
+          myEmployeeId = u.user.id || null;
+          myGradeRank = u.user.grade?.rank ?? null;
+        }
+      } catch {}
+    }
+
+    const sumAmount = (arr: any[]) => arr.reduce((s: number, it: any) => s + (it.netAmount?.amount ?? it.grossSalary?.amount ?? it.amount ?? 0), 0);
+    const isPaid = (it: any) => (it.status || it.payrollStatus) === 'PAID';
+
+    if (myEmployeeId) {
+      const ownItems = (items || []).filter((it: any) => it.employeeId === myEmployeeId);
+      const downstreamItems = (items || []).filter((it: any) => {
+        const gr = it.gradeRank ?? it.grade?.rank;
+        return typeof gr === 'number' && myGradeRank !== null ? gr > myGradeRank! : false;
+      });
+
+      this.ownTotalPaid.set(sumAmount(ownItems.filter(isPaid)));
+      this.ownTotalUnpaid.set(sumAmount(ownItems.filter((it: any) => !isPaid(it))));
+      this.downstreamTotalPaid.set(sumAmount(downstreamItems.filter(isPaid)));
+      this.downstreamTotalUnpaid.set(sumAmount(downstreamItems.filter((it: any) => !isPaid(it))));
+    } else {
+      this.ownTotalPaid.set(0);
+      this.ownTotalUnpaid.set(0);
+      this.downstreamTotalPaid.set(0);
+      this.downstreamTotalUnpaid.set(0);
+    }
+  }
+
   calculateSalaries() {
     // Validate employees exist
     if (this.employees().length === 0) {
@@ -205,7 +346,8 @@ export class PayrollProcessComponent implements OnInit {
     }
 
     // Check if company exists
-    if (!this.companyId()) {
+    const selectedCompanyId = this.companySelection.selectedCompanyId();
+    if (!selectedCompanyId) {
       this.message.set('⚠️ Company information missing');
       return;
     }
@@ -220,11 +362,11 @@ export class PayrollProcessComponent implements OnInit {
     // Get funding account from company service (not from employee data)
     // We need to fetch full company details to get mainAccount.id
     this.loading.set(true);
-    
-    this.companyService.getCompany(this.companyId()).subscribe({
+
+    this.companyService.getCompany(selectedCompanyId).subscribe({
       next: (company: any) => {
         const fundingAccountId = company.mainAccount?.id;
-        
+
         console.log('🏦 Company data:', {
           companyId: company.id,
           mainAccount: company.mainAccount,
@@ -238,7 +380,7 @@ export class PayrollProcessComponent implements OnInit {
         }
 
         console.log('🚀 Creating payroll batch with:', {
-          companyId: this.companyId(),
+          companyId: selectedCompanyId,
           fundingAccountId,
           baseSalary: this.grade6Basic()
         });
@@ -249,7 +391,7 @@ export class PayrollProcessComponent implements OnInit {
         const payload = {
           name: `${monthName} Payroll`,
           payrollMonth: now.toISOString().slice(0, 10), // YYYY-MM-DD format
-          companyId: this.companyId(),
+          companyId: selectedCompanyId,
           fundingAccountId: fundingAccountId,
           description: `${monthName} Payroll Distribution`,
           baseSalary: this.grade6Basic()
@@ -262,7 +404,13 @@ export class PayrollProcessComponent implements OnInit {
             console.log('✅ Batch created successfully:', batch);
             this.loading.set(false);
             this.message.set(`✅ Payroll batch created. Batch ID: ${batch.id}`);
-            
+
+            // Update local state with new batch
+            this.batchData.set(batch);
+            this.batchId.set(batch.id);
+            this.batchName.set(batch.name || 'N/A');
+            this.loading.set(false);
+            this.message.set(`✅ Payroll batch created. Batch ID: ${batch.id}`);
             // Update local state with new batch
             this.batchData.set(batch);
             this.batchId.set(batch.id);
@@ -270,35 +418,30 @@ export class PayrollProcessComponent implements OnInit {
             this.batchStatus.set(batch.payrollStatus || batch.status || 'PENDING');
             this.payrollMonth.set(batch.payrollMonth || 'N/A');
             this.paymentStatus.set({ totalPaid: batch.executedAmount?.amount || 0, requiredTopUp: 0 });
-
             // Reload company balance
-            this.loadCompany(this.companyId());
-
+            this.loadCompany(selectedCompanyId);
             // Load batch items
             let employeeId: string | undefined = undefined;
-            const userStr = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('userProfile') : null;
-            if (userStr) {
-              try {
-                const user = JSON.parse(userStr);
-                if (user && user.user && user.user.role === 'EMPLOYEE') {
-                  employeeId = user.user.id;
+                const userStr = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('userProfile') : null;
+                if (userStr) {
+                  try {
+                    const user = JSON.parse(userStr);
+                    if (user && user.user && user.user.role === 'EMPLOYEE') {
+                      employeeId = user.user.id;
+                    }
+                  } catch {}
                 }
-              } catch {}
-            }
-            this.payrollService.getPayrollItems(batch.id, employeeId).subscribe({
-              next: (items: any[]) => {
-                this.batchItems.set(items || []);
-              },
-              error: (err: any) => {
-                console.error('Failed to load batch items:', err);
-                this.batchItems.set([]);
-              }
-            });
-          },
-          error: (error: any) => {
-            console.error('❌ Failed to create payroll batch:', error);
-            const errorMsg = error.error?.message || error.message || 'Failed to create payroll';
-            this.message.set(`❌ ${errorMsg}`);
+                this.payrollService.getPayrollItems(batch.id, employeeId).subscribe({
+                  next: (items: any[]) => {
+                    this.batchItems.set(items || []);
+                    // After batch creation, reload page state
+                    this.currentPage.set(0);
+                  },
+                  error: (err: any) => {
+                    this.batchItems.set([]);
+                    this.currentPage.set(0);
+                  }
+                });
             this.loading.set(false);
           }
         });
@@ -363,7 +506,7 @@ export class PayrollProcessComponent implements OnInit {
           console.log('✅ Payroll batch processed:', response);
           
           // Reload balances and batch info
-          this.loadCompany(this.companyId());
+          this.loadCompany(this.companySelection.selectedCompanyId());
           let employeeId: string | undefined = undefined;
           const userStr = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('userProfile') : null;
           if (userStr) {
@@ -374,7 +517,7 @@ export class PayrollProcessComponent implements OnInit {
               }
             } catch {}
           }
-          this.loadLastBatch(this.companyId(), employeeId);
+          this.loadLastBatch(this.companySelection.selectedCompanyId(), employeeId);
         },
         error: (error: any) => {
           console.error('❌ Failed to process payroll:', error);
@@ -444,7 +587,7 @@ export class PayrollProcessComponent implements OnInit {
     console.log('💰 Processing top-up:', formatCurrency(amount));
     this.loading.set(true);
     
-    this.companyService.topUp(this.companyId(), {
+    this.companyService.topUp(this.companySelection.selectedCompanyId(), {
       amount: amount,
       description: 'Emergency top-up for payroll processing'
     }).subscribe({
@@ -456,7 +599,7 @@ export class PayrollProcessComponent implements OnInit {
           this.companyBalance.set(response.newBalance);
         } else {
           // Reload company data to get updated balance
-          this.companyService.getCompany(this.companyId()).subscribe({
+          this.companyService.getCompany(this.companySelection.selectedCompanyId()).subscribe({
             next: (company: any) => {
               this.companyBalance.set(company.mainAccount.currentBalance);
               console.log('✅ Balance reloaded:', formatCurrency(company.mainAccount.currentBalance));

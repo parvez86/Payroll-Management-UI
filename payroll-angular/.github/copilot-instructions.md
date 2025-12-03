@@ -1,4 +1,16 @@
-You are an expert in TypeScript, Angular, and scalable web application development. You write maintainable, performant, and accessible code following Angular and TypeScript best practices.
+# Angular 21 Payroll Management System - AI Agent Guide
+
+You are an expert in TypeScript, Angular 21, and scalable web application development. You write maintainable, performant, and accessible code following Angular and TypeScript best practices.
+
+## Project Context
+
+This is the **Angular migration** of the React-based Payroll Management System. **95% complete** with modular component architecture, RBAC via `UserContextService`, and real API integration ready for final testing.
+
+**Key Files**:
+- `AGENTS.md` - Complete Angular 21 patterns reference (READ THIS FIRST)
+- `src/app/services/user-context.service.ts` - Centralized RBAC with signal-based role checks
+- `src/app/interceptors/auth.interceptor.ts` - JWT auto-injection for all protected routes
+- `src/environments/environment.ts` - API base URL: `http://localhost:20001/pms/api/v1`
 
 ## TypeScript Best Practices
 
@@ -6,15 +18,18 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Prefer type inference when the type is obvious
 - Avoid the `any` type; use `unknown` when type is uncertain
 
-## Angular Best Practices
+## Angular 21 Best Practices
 
-- Always use standalone components over NgModules
-- Must NOT set `standalone: true` inside Angular decorators. It's the default.
-- Use signals for state management
-- Implement lazy loading for feature routes
-- Do NOT use the `@HostBinding` and `@HostListener` decorators. Put host bindings inside the `host` object of the `@Component` or `@Directive` decorator instead
-- Use `NgOptimizedImage` for all static images.
-  - `NgOptimizedImage` does not work for inline base64 images.
+- **Standalone components** (default, NEVER set `standalone: true`)
+- **Signals for state** (`signal()`, `computed()`, NEVER `mutate()` - use `update()` or `set()`)
+- **`inject()` function** (not constructor injection)
+- **Native control flow** (`@if`, `@for`, `@switch` instead of `*ngIf`, `*ngFor`, `*ngSwitch`)
+- **Input/Output functions** (`input()`, `output()` instead of `@Input()`, `@Output()`)
+- **OnPush change detection** (`changeDetection: ChangeDetectionStrategy.OnPush`)
+- **Host bindings** (`host: {...}` in decorator, NOT `@HostBinding`/`@HostListener`)
+- **No ngClass/ngStyle** (use `[class.foo]`, `[style.color]`)
+- **Reactive forms** (prefer over template-driven)
+- **`NgOptimizedImage`** for static images (not inline base64)
 
 ## Components
 
@@ -23,9 +38,6 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Use `computed()` for derived state
 - Set `changeDetection: ChangeDetectionStrategy.OnPush` in `@Component` decorator
 - Prefer inline templates for small components
-- Prefer Reactive forms instead of Template-driven ones
-- Do NOT use `ngClass`, use `class` bindings instead
-- Do NOT use `ngStyle`, use `style` bindings instead
 
 ## State Management
 
@@ -45,3 +57,30 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Design services around a single responsibility
 - Use the `providedIn: 'root'` option for singleton services
 - Use the `inject()` function instead of constructor injection
+
+## Project-Specific Patterns
+
+### RBAC (UserContextService)
+```typescript
+private userContext = inject(UserContextService);
+isAdmin = this.userContext.isAdmin;  // computed signal
+canEdit = this.userContext.canManageEmployees;
+```
+
+### API Calls (HTTP + Interceptor)
+```typescript
+private http = inject(HttpClient);
+// Auth token auto-injected by auth.interceptor.ts
+this.http.post<APIResponse<T>>(`${apiUrl}/endpoint`, data)
+  .subscribe(response => {
+    if (response.success) {
+      // Handle response.data
+    }
+  });
+```
+
+### Routing with Guards
+```typescript
+// app.routes.ts - Auth guard checks localStorage.accessToken
+{ path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] }
+```

@@ -2,15 +2,30 @@
   <header class="app-header">
     <h1 class="app-title">💵 Payroll Management System</h1>
     <div class="header-actions">
-      <div class="company-balance" [class.negative]="companyAccountBalance() < 0">
-        @if (isEmployee()) {
-          My Balance: {{ formatCurrency(companyAccountBalance()) }}
-        } @else {
-          Company Balance: {{ formatCurrency(companyAccountBalance()) }}
-        }
+      @if (isAdmin()) {
+        <div class="company-selector">
+          <label class="selector-label">🏢</label>
+          <select 
+            [value]="companySelection.selectedCompanyId()" 
+            (change)="onCompanyChange($any($event.target).value)"
+            class="company-select">
+            <option value="">All</option>
+            @for (company of companies(); track company.id) {
+              <option [value]="company.id">{{ company.name }}</option>
+            }
+          </select>
+        </div>
+      }
+      <div class="company-balance" [class.negative]="companyAccountBalance() < 0" [title]="balanceTooltip()">
+        {{ balanceLabel() }}: {{ formatCurrency(companyAccountBalance()) }}
       </div>
       <div class="user-info">
         👤 {{ userProfile()?.user?.username }}
+        @if (userContext.userRole()) {
+          <span class="role-badge role-{{ userContext.userRole()?.toLowerCase() }}">
+            {{ userContext.userRole() }}
+          </span>
+        }
       </div>
       <button (click)="logout()" class="logout-button">🚪 Logout</button>
     </div>
@@ -19,6 +34,13 @@
   <div class="status-banner">
     ✅ <strong>System Connected!</strong> Employee management system active
   </div>
+
+  @if (userContext.userRole()) {
+    <div class="role-info-banner">
+      <span class="info-icon">ℹ️</span>
+      <span class="info-text">{{ getRoleDescription() }}</span>
+    </div>
+  }
 
   <nav class="nav-tabs">
     <a routerLink="/dashboard/employees" routerLinkActive="active" class="nav-tab">

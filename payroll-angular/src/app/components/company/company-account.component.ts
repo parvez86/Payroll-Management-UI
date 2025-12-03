@@ -1,8 +1,11 @@
-import { Component, signal, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, inject, OnInit, computed, ChangeDetectionStrategy } from '@angular/core';
+import { effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CompanyService } from '../../services/company.service';
+import { CompanySelectionService } from '../../services/company-selection.service';
 import { EmployeeService } from '../../services/employee.service';
+import { UserContextService } from '../../services/user-context.service';
 import { formatCurrency } from '../../simulator/salary-calculator';
 import { ToastMessageComponent } from '../shared/toast-message.component';
 import { LoadingSpinnerComponent } from '../shared/loading-spinner.component';
@@ -16,62 +19,90 @@ import { LoadingSpinnerComponent } from '../shared/loading-spinner.component';
   styleUrls: ['./company-account.component.css']
 })
 export class CompanyAccountComponent implements OnInit {
+    // Always reload company account data on tab activation and company change
   private companyService = inject(CompanyService);
   private employeeService = inject(EmployeeService);
+  userContext = inject(UserContextService);
+  companySelection = inject(CompanySelectionService);
 
-  companyId = signal('');
+  // Always use the selected company from global selection
+  companyId = computed(() => this.companySelection.selectedCompanyId());
   balance = signal(0);
   companyName = signal('');
   accountInfo: any = null;
   showAccountDetails = signal(true);
-  isEmployee = signal(false);
+  
+  // Multi-company support for ADMIN
+  companies = signal<any[]>([]);
+  systemBalance = computed(() => {
+    return this.companies().reduce((sum, c) => sum + (c.mainAccount?.currentBalance || 0), 0);
+  });
+  
+  // Role checks
+  isEmployee = computed(() => this.userContext.isEmployee());
+  isAdmin = computed(() => this.userContext.isAdmin());
+  isEmployer = computed(() => this.userContext.isEmployer());
+  canTopUp = computed(() => this.userContext.canTopUpAccount());
+  
+  // Dynamic labels
+  pageTitle = computed(() => this.userContext.getAccountPageTitle());
+  topUpLabel = computed(() => this.userContext.getTopUpLabel());
 
   ngOnInit() {
-    this.checkUserRole();
-    this.loadCompanyData();
+    // No effect() here! Do not override dropdown selection.
   }
+  // Always reload company account data on tab activation and company change
+  private companyEffect = effect(() => {
+    this.companySelection.selectedCompanyId();
+    this.loadCompanyData();
+  });
 
   checkUserRole() {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const role = window.localStorage.getItem('userRole');
-      this.isEmployee.set(role === 'EMPLOYEE');
-    }
+    // No longer needed, using UserContextService
   }
 
   loadCompanyData() {
     this.loading.set(true);
-    
-    // Load from userProfile first
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const userProfileStr = window.localStorage.getItem('userProfile');
-      if (userProfileStr) {
-        try {
-          const profile = JSON.parse(userProfileStr);
-          if (profile.account) {
-            this.accountInfo = profile.account;
-            this.balance.set(profile.account.currentBalance || 0);
-          }
-          if (profile.companyId) {
-            this.companyId.set(profile.companyId);
-            // Load company details for admin/employer
-            if (!this.isEmployee()) {
-              this.loadCompany(profile.companyId);
-            }
-          }
-          this.loading.set(false);
-          return;
-        } catch (e) {
-          console.error('Failed to parse userProfile:', e);
-        }
-      }
+    const selectedCompanyId = this.companySelection.selectedCompanyId();
+    if (!selectedCompanyId) {
+      // Show all companies (system-wide view)
+      this.loadAllCompanies();
+    } else {
+      // Show only the selected company
+      this.loadCompany(selectedCompanyId);
     }
-    
-    // Fallback for admin/employer
-    this.employeeService.getAll('ACTIVE', undefined, 0, 1).subscribe({
+  }
+  
+  loadEmployeeAccount(employeeId: string) {
+    const companyId = this.companySelection.selectedCompanyId() || this.userContext.companyId() || '';
+    this.employeeService.getById(employeeId, companyId).subscribe({
+      next: (employee) => {
+        this.accountInfo = employee.account;
+        this.balance.set(employee.account.currentBalance || 0);
+        this.companyName.set(employee.name);
+        // Set grade rank for downstream calculations
+        if (employee.grade?.rank) {
+          this.userContext.setEmployeeGradeRank(employee.grade.rank);
+        }
+        this.loading.set(false);
+        this.message.set('✅ Account loaded successfully');
+      },
+      error: (error) => {
+        console.error('Failed to load employee account:', error);
+        this.message.set('❌ Failed to load account');
+        this.loading.set(false);
+      }
+    });
+  }
+  
+  loadCompanyFallback() {
+    // Fallback: load first company
+    const companyId = this.companySelection.selectedCompanyId() || this.userContext.companyId() || '';
+    this.employeeService.getAll('ACTIVE', companyId, 0, 1).subscribe({
       next: (response: any) => {
         const data = response?.content || response;
         if (Array.isArray(data) && data.length > 0 && data[0].company) {
-          this.companyId.set(data[0].company.id);
+          this.companySelection.setSelectedCompany(data[0].company.id);
           this.loadCompany(data[0].company.id);
         }
         this.loading.set(false);
@@ -88,8 +119,28 @@ export class CompanyAccountComponent implements OnInit {
       next: (company) => {
         this.balance.set(company.mainAccount.currentBalance);
         this.companyName.set(company.name);
+        this.loading.set(false);
       },
-      error: (error) => console.error('Failed to load company:', error)
+      error: (error) => {
+        console.error('Failed to load company:', error);
+        this.loading.set(false);
+      }
+    });
+  }
+  
+  loadAllCompanies() {
+    this.companyService.getAllCompanies().subscribe({
+      next: (companies) => {
+          this.companies.set(companies);
+          console.log('DEBUG: companies signal set:', companies);
+          this.loading.set(false);
+          this.message.set(`✅ Loaded ${companies.length} companies`);
+      },
+      error: (error) => {
+        console.error('Failed to load companies:', error);
+        this.message.set('❌ Failed to load companies');
+        this.loading.set(false);
+      }
     });
   }
 
@@ -137,6 +188,33 @@ export class CompanyAccountComponent implements OnInit {
       }
     });
   }
+  
+  topUpCompany(companyId: string, amount: number) {
+    if (amount <= 0 || amount < 1000) {
+      this.message.set('⚠️ Minimum top-up amount is 1,000 BDT');
+      return;
+    }
+    
+    this.loading.set(true);
+    
+    this.companyService.topUp(companyId, {
+      amount: amount,
+      description: 'Account top-up'
+    }).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.message.set(`✅ Added ${formatCurrency(amount)}`);
+        // Reload all companies to get updated balances
+        this.loadAllCompanies();
+      },
+      error: (error) => {
+        console.error('Failed to top up:', error);
+        const errorMsg = error.error?.message || 'Top-up failed';
+        this.message.set(`❌ ${errorMsg}`);
+        this.loading.set(false);
+      }
+    });
+  }
 
   openTopUpModal() {
     this.isTopUpModalOpen.set(true);
@@ -152,5 +230,10 @@ export class CompanyAccountComponent implements OnInit {
 
   formatCurrency(amount: number): string {
     return formatCurrency(amount);
+  }
+
+  viewTransactions(company: any) {
+    // TODO: Implement view transactions
+    console.log('View transactions for', company);
   }
 }

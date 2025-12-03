@@ -1,10 +1,18 @@
 <div class="payroll-container">
   <h2 class="section-title">💰 Payroll Processing</h2>
 
-  <!-- Payroll Processing Card (added) -->
+  <!-- Payroll Processing Card: hidden for EMPLOYEE role -->
+  @if (!isEmployeeUser()) {
   <div class="payroll-card">
     <div class="payroll-card-header">⚙️ Payroll Processing</div>
     <div class="payroll-card-body">
+      @if (isAdmin() && isAllCompaniesSelected()) {
+        <div style="background:#fff3cd;border:1px solid #ffeeba;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;color:#856404;display:flex;align-items:center;gap:8px;">
+          <span>
+            🌐 Please select a specific company from the header to enable payroll batch creation and processing.
+          </span>
+        </div>
+      }
       <div class="payroll-input-group">
         <label for="basicSalary" class="payroll-label">Grade 6 Basic Salary (BDT)</label>
         <input
@@ -17,41 +25,48 @@
         />
       </div>
       <div class="payroll-actions">
-        <button (click)="calculateSalaries()" class="pay-btn primary" [disabled]="loading() || employees().length === 0 || (batchStatus() === 'PENDING' || batchStatus() === 'PROCESSING' || batchStatus() === 'PARTIALLY_COMPLETED')" [title]="employees().length === 0 ? 'No employees available' : (batchStatus() === 'PENDING' || batchStatus() === 'PROCESSING') ? 'Complete or cancel current batch first' : 'Create new payroll batch'">📝 Create Payroll</button>
-        <button (click)="processPayroll()" class="pay-btn success" [disabled]="loading() || (batchStatus() !== 'PENDING' && batchStatus() !== 'PROCESSING')">💸 Process Payroll</button>
+        <button (click)="calculateSalaries()" class="pay-btn primary" [disabled]="isAllCompaniesSelected() || loading() || (batchStatus() === 'PENDING' || batchStatus() === 'PROCESSING' || batchStatus() === 'PARTIALLY_COMPLETED')" [title]="isAllCompaniesSelected() ? 'Select a specific company in header' : (batchStatus() === 'PENDING' || batchStatus() === 'PROCESSING') ? 'Complete or cancel current batch first' : 'Create new payroll batch'">📝 Create Payroll</button>
+        <button (click)="processPayroll()" class="pay-btn success" [disabled]="loading() || isAllCompaniesSelected() || !companySelection.selectedCompanyId() || (batchStatus() !== 'PENDING' && batchStatus() !== 'PROCESSING')">💸 Process Payroll</button>
         @if (paymentStatus().requiredTopUp > 0) {
           <button (click)="openTopUpModal()" class="pay-btn warning">⚠️ Top Up Required</button>
         }
       </div>
     </div>
   </div>
+  }
 
   <!-- Salary Sheet Overview Header -->
   <div class="salary-sheet-header">
     <h3 class="sheet-title">💰 Salary Sheet Overview</h3>
   </div>
 
-  <!-- Salary Overview Cards -->
-  <div class="salary-overview">
-        <div class="overview-card pay-amount">
-          <div class="card-label">PAY TO BE AMOUNT</div>
-          <div class="card-value green">{{ formatCurrency(batchData()?.totalAmount?.amount || 0) }}</div>
+  <!-- Role-Based Salary Overview Cards -->
+  <div class="salary-overview" [class.grid-4]="isEmployeeUser()">
+    @for (metric of overviewMetrics(); track metric.label) {
+      <div class="overview-card" 
+           [class.pay-amount]="metric.color === 'yellow'" 
+           [class.paid-amount]="metric.color === 'green'"
+           [class.company-balance]="metric.color === 'purple'">
+        <div class="card-label">{{ metric.label }}</div>
+        <div class="card-value" 
+             [class.green]="metric.color === 'green'" 
+             [class.danger]="metric.danger">
+          {{ formatCurrency(metric.value) }}
         </div>
-        <div class="overview-card paid-amount">
-          <div class="card-label">TOTAL PAID AMOUNT</div>
-          <div class="card-value green">{{ formatCurrency(batchData()?.executedAmount?.amount || 0) }}</div>
-        </div>
-        <div class="overview-card company-balance">
-          <div class="card-label">COMPANY ACCOUNT BALANCE</div>
-          <div class="card-value" [class.danger]="companyBalance() < (batchData()?.totalAmount?.amount || 0)">
-            {{ formatCurrency(companyBalance()) }}
-          </div>
-        </div>
+      </div>
+    }
   </div>
 
   <!-- Batch Information -->
   <div class="batch-info-card-modern">
     <div class="batch-info-grid">
+      <div class="batch-info-item">
+        <div class="batch-info-label">
+          <span class="batch-icon">🏢</span>
+          Company
+        </div>
+        <div class="batch-info-value">{{ companyName() || 'N/A' }}</div>
+      </div>
       <div class="batch-info-item">
         <div class="batch-info-label">
           <span class="batch-icon">🆔</span>
@@ -111,6 +126,30 @@
         </tr>
       </thead>
       <tbody class="table-body">
+        @if (employeesWithSalaries().length === 0 && !loading()) {
+          <tr>
+            <td colspan="9" class="empty-state-cell">
+              <div class="empty-state">
+                <div class="empty-icon">💰</div>
+                @if (!batchData()) {
+                  <h3 class="empty-title">No Payroll Batch</h3>
+                  @if (canProcessPayroll()) {
+                    <p class="empty-text">Create a new payroll batch to start processing salaries.</p>
+                    <button (click)="calculateSalaries()" class="btn-create-batch" 
+                            [disabled]="loading() || employees().length === 0">
+                      📝 Create Payroll Batch
+                    </button>
+                  } @else {
+                    <p class="empty-text">No payroll has been processed yet. Check back later.</p>
+                  }
+                } @else {
+                  <h3 class="empty-title">No Employees Found</h3>
+                  <p class="empty-text">No employees match the current criteria.</p>
+                }
+              </div>
+            </td>
+          </tr>
+        }
         @for (emp of paginatedEmployees(); track emp.id) {
           <tr [class.paid-row]="emp.salary?.isPaid">
             <td class="table-cell">

@@ -52,11 +52,16 @@ export class AuthService {
               window.localStorage.setItem('user', JSON.stringify(userProfile.user));
               window.localStorage.setItem('userRole', userProfile.user.role);
               // Store additional data for quick access
-              if (userProfile.companyId) window.localStorage.setItem('companyId', userProfile.companyId);
+              const primaryCompanyId = userProfile.companyId || userProfile.companyIds?.[0];
+              if (primaryCompanyId) {
+                const id = typeof primaryCompanyId === 'string' ? primaryCompanyId : primaryCompanyId.companyId;
+                window.localStorage.setItem('companyId', id);
+              }
+              if (userProfile.companyIds) window.localStorage.setItem('companyIds', JSON.stringify(userProfile.companyIds));
               if (userProfile.bizId) window.localStorage.setItem('bizId', userProfile.bizId);
               if (userProfile.account) window.localStorage.setItem('userAccount', JSON.stringify(userProfile.account));
             }
-            console.log('✅ User stored:', userProfile.user, 'Company:', userProfile.companyId, 'BizId:', userProfile.bizId);
+            console.log('✅ User stored:', userProfile.user, 'Companies:', userProfile.companyIds || [userProfile.companyId], 'BizId:', userProfile.bizId);
             
             return {
               token: loginData.accessToken,
@@ -152,6 +157,7 @@ export class AuthService {
   clearAuthData(): void {
     if (typeof window !== 'undefined' && window.localStorage) {
       console.log('🧹 Clearing all authentication data');
+      // Clear all auth-related keys
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
@@ -159,14 +165,21 @@ export class AuthService {
       localStorage.removeItem('userRole');
       localStorage.removeItem('tokenExpiration');
       localStorage.removeItem('tokenType');
-      // Clear payroll-related data on logout (matching React pattern)
+      // Clear company and user-specific data
+      localStorage.removeItem('companyId');
+      localStorage.removeItem('companyIds');
+      localStorage.removeItem('bizId');
+      localStorage.removeItem('userAccount');
+      localStorage.removeItem('selectedCompanyId');
+      // Clear payroll-related data
       localStorage.removeItem('payrollBatchInfo');
       localStorage.removeItem('payrollBatchId');
       localStorage.removeItem('payrollBatchStatus');
+      // Clear sessionStorage
       sessionStorage.removeItem('payrollBatchInfo');
       sessionStorage.removeItem('payrollBatchId');
       sessionStorage.removeItem('payrollBatchStatus');
-      console.log('✅ All authentication and payroll data cleared');
+      console.log('✅ All authentication, company, and payroll data cleared from storage');
     }
   }
 

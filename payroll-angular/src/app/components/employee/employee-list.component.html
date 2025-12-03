@@ -18,10 +18,12 @@
   </div>
 
   <div class="list-header">
-    <h2 class="section-title">👥 Employee Management</h2>
-    <button (click)="goToAddEmployee()" class="add-button">
-      ➕ Add Employee
-    </button>
+    <h2 class="section-title">{{ getEmployeeListTitle() }}</h2>
+    @if (!isEmployeeUser()) {
+      <button (click)="goToAddEmployee()" class="add-button">
+        ➕ Add Employee
+      </button>
+    }
   </div>
 
   <div class="table-container">
@@ -43,6 +45,28 @@
         </tr>
       </thead>
       <tbody class="table-body">
+        @if (employees().length === 0 && !loading()) {
+          <tr>
+            <td colspan="6" class="empty-state-cell">
+              <div class="empty-state">
+                <div class="empty-icon">👥</div>
+                @if (isEmployeeUser()) {
+                  <h3 class="empty-title">No Team Members</h3>
+                  <p class="empty-text">You don't have any downstream employees yet.</p>
+                  <p class="empty-hint">As employees join under you, they'll appear here.</p>
+                } @else {
+                  <h3 class="empty-title">No Employees Found</h3>
+                  <p class="empty-text">No employees match your current filters.</p>
+                  @if (statusFilter() !== 'ACTIVE') {
+                    <button (click)="handleStatusChange('ACTIVE')" class="btn-reset">
+                      Show Active Employees
+                    </button>
+                  }
+                }
+              </div>
+            </td>
+          </tr>
+        }
         @for (emp of paginatedEmployees(); track emp.id) {
           <tr>
             <td class="table-cell">
@@ -70,8 +94,12 @@
               <div class="amount">{{ formatCurrency(emp.account.currentBalance) }}</div>
             </td>
             <td class="table-cell text-center">
-              <button (click)="handleEdit(emp)" class="action-button edit">✏️</button>
-              <button (click)="handleDelete(emp)" class="action-button delete">🗑️</button>
+              @if (!isEmployeeUser()) {
+                <button (click)="handleEdit(emp)" class="action-button edit">✏️</button>
+                <button (click)="handleDelete(emp)" class="action-button delete">🗑️</button>
+              } @else {
+                <span class="readonly-note">Read-only</span>
+              }
             </td>
           </tr>
         }

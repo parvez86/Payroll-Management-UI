@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"name": "Payroll-Management-UI",
+			"path": "../../../../.."
+		}
+	],
+	"settings": {
+		"github.copilot.nextEditSuggestions.enabled": true
+	}
+}

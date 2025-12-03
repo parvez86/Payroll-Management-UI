@@ -27,6 +27,10 @@ export class RealBackendComponent {
   employees = signal<Employee[]>([]);
   companyAccountBalance = signal(0);
   companyId = signal('');
+  primaryCompanyId = computed(() => {
+    const profile = this.userProfile();
+    return profile?.companyId || '';
+  });
   grade6Basic = signal(25000);
   view = signal<'employees' | 'salarySheet' | 'addEdit'>('employees');
   editEmployee = signal<Employee | null>(null);
@@ -163,9 +167,9 @@ export class RealBackendComponent {
   // API Methods
   loadInitialData(): void {
     this.loading.set(true);
-    
-    // Load employees
-    this.employeeService.getAll().subscribe({
+    // Use primaryCompanyId for all employee API calls
+    const companyId = this.primaryCompanyId();
+    this.employeeService.getAll('ACTIVE', companyId, 0, 5).subscribe({
       next: (data) => {
         this.employees.set(data);
         
@@ -478,7 +482,7 @@ export class RealBackendComponent {
     
     if (this.editEmployee()) {
       // Update existing
-      this.employeeService.update(data.id, data).subscribe({
+      this.employeeService.update(data.id, data, this.primaryCompanyId()).subscribe({
         next: () => {
           this.loadInitialData();
           this.handleCancelEdit();
@@ -493,7 +497,7 @@ export class RealBackendComponent {
       });
     } else {
       // Create new
-      this.employeeService.create(data).subscribe({
+      this.employeeService.create(data, this.primaryCompanyId()).subscribe({
         next: () => {
           this.loadInitialData();
           this.handleCancelEdit();
@@ -519,7 +523,7 @@ export class RealBackendComponent {
     
     this.loading.set(true);
     
-    this.employeeService.delete(id).subscribe({
+    this.employeeService.delete(id, this.primaryCompanyId()).subscribe({
       next: () => {
         this.loadInitialData();
         this.message.set(`✅ Employee ${emp.code} deleted successfully`);
