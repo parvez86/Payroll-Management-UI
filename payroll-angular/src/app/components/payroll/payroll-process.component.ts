@@ -50,36 +50,14 @@ export class PayrollProcessComponent implements OnInit {
   canProcessPayroll = computed(() => this.userContext.canProcessPayroll());
 
   ngOnInit() {
-    // Restore global company selection
     this.companySelection.restoreFromStorage();
+    this.userContext.refreshProfile();
     // No effect() here!
   }
   // Always reload payroll data on tab activation and company change
   private companyEffect = effect(() => {
-    // Always use the selected company from global selection
-    const selectedCompanyId = this.companySelection.selectedCompanyId();
-    if (!selectedCompanyId) {
-      this.employees.set([]);
-      return;
-    }
-    this.loading.set(true);
-    this.employeeService.getAll('ACTIVE', selectedCompanyId, 0, 100).subscribe({
-      next: (response: any) => {
-        const data = response?.content || response;
-        if (Array.isArray(data)) {
-          this.employees.set(data);
-        } else {
-          this.employees.set([]);
-        }
-        this.loading.set(false);
-        // Optionally, reload batch info for the selected company
-        this.loadLastBatch(selectedCompanyId);
-      },
-      error: () => {
-        this.employees.set([]);
-        this.loading.set(false);
-      }
-    });
+    this.companySelection.selectedCompanyId();
+    this.loadData(); // Always fetch live from backend
   });
 
   // Disable payroll operations when "All Companies" is selected globally

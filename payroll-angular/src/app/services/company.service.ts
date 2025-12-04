@@ -70,7 +70,7 @@ export class CompanyService {
     // Get all companies (ADMIN only)
     return this.http.get<any>(`${this.apiUrl}/companies`).pipe(
       map(response => {
-        console.log('✅ All companies loaded');
+        console.log('✅ All companies loaded, raw response:', response);
         if (response.success && response.data) return response.data;
         if (Array.isArray(response)) return response;
         return [];

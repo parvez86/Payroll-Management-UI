@@ -34,6 +34,10 @@ export class CompanySelectionService {
     // Persist in localStorage for page reloads
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem('selectedCompanyId', companyId);
+      // If 'All' is selected, remove primary company id
+      if (!companyId) {
+        window.localStorage.removeItem('primaryCompanyId');
+      }
     }
     
     console.log('🏢 Global company selection changed:', companyId === '' ? 'All Companies' : companyId);

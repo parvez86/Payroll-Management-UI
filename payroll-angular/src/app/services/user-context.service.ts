@@ -1,3 +1,4 @@
+// Cleaned up: all code before imports removed
 import { Injectable, signal, computed } from '@angular/core';
 import type { UserProfile } from '../models/api.types';
 
@@ -111,6 +112,22 @@ export class UserContextService {
    */
   setEmployeeGradeRank(rank: number | null): void {
     this.gradeRankSignal.set(rank);
+  }
+  
+  /**
+   * Update companyIds and companyId in user profile and localStorage
+   */
+  setCompanyContext(companyIds: Record<string, string>, selectedCompanyId?: string): void {
+    const profile = this.userProfile();
+    if (!profile) return;
+    // Convert companyIds map to array if needed
+    profile.companyIds = Object.entries(companyIds).map(([companyId, companyName]) => ({ companyId, companyName }));
+    if (selectedCompanyId) profile.companyId = selectedCompanyId;
+    this.userProfile.set(profile);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('userProfile', JSON.stringify(profile));
+    }
+    console.log('👤 Company context updated:', { companyIds, selectedCompanyId });
   }
   
   // Permission helpers

@@ -49,77 +49,39 @@ export class CompanyAccountComponent implements OnInit {
   topUpLabel = computed(() => this.userContext.getTopUpLabel());
 
   ngOnInit() {
+    this.companySelection.restoreFromStorage();
+    this.userContext.refreshProfile();
     // No effect() here! Do not override dropdown selection.
   }
-  // Always reload company account data on tab activation and company change
+  // Always reload company info and balances on tab activation, reload, or dropdown change
   private companyEffect = effect(() => {
-    this.companySelection.selectedCompanyId();
-    this.loadCompanyData();
-  });
-
-  checkUserRole() {
-    // No longer needed, using UserContextService
-  }
-
-  loadCompanyData() {
-    this.loading.set(true);
-    const selectedCompanyId = this.companySelection.selectedCompanyId();
-    if (!selectedCompanyId) {
-      // Show all companies (system-wide view)
+    const selectedId = this.companySelection.selectedCompanyId();
+    if (!selectedId) {
+      // All Companies: fetch list, sum balances, show system info
       this.loadAllCompanies();
     } else {
-      // Show only the selected company
-      this.loadCompany(selectedCompanyId);
+      // Specific company: fetch and show only that company's info
+      this.loadCompany(selectedId);
     }
-  }
-  
-  loadEmployeeAccount(employeeId: string) {
-    const companyId = this.companySelection.selectedCompanyId() || this.userContext.companyId() || '';
-    this.employeeService.getById(employeeId, companyId).subscribe({
-      next: (employee) => {
-        this.accountInfo = employee.account;
-        this.balance.set(employee.account.currentBalance || 0);
-        this.companyName.set(employee.name);
-        // Set grade rank for downstream calculations
-        if (employee.grade?.rank) {
-          this.userContext.setEmployeeGradeRank(employee.grade.rank);
-        }
-        this.loading.set(false);
-        this.message.set('✅ Account loaded successfully');
-      },
-      error: (error) => {
-        console.error('Failed to load employee account:', error);
-        this.message.set('❌ Failed to load account');
-        this.loading.set(false);
-      }
-    });
-  }
-  
-  loadCompanyFallback() {
-    // Fallback: load first company
-    const companyId = this.companySelection.selectedCompanyId() || this.userContext.companyId() || '';
-    this.employeeService.getAll('ACTIVE', companyId, 0, 1).subscribe({
-      next: (response: any) => {
-        const data = response?.content || response;
-        if (Array.isArray(data) && data.length > 0 && data[0].company) {
-          this.companySelection.setSelectedCompany(data[0].company.id);
-          this.loadCompany(data[0].company.id);
-        }
-        this.loading.set(false);
-      },
-      error: (error) => {
-        console.error('Failed to load:', error);
-        this.loading.set(false);
-      }
-    });
-  }
+  });
+
+  // Add new signals for company description and created date (declare only once)
+  companyDescription = signal('');
+  companyCreatedAt = signal('');
 
   loadCompany(id: string) {
     this.companyService.getCompany(id).subscribe({
       next: (company) => {
         this.balance.set(company.mainAccount.currentBalance);
         this.companyName.set(company.name);
+        this.accountInfo = company.mainAccount;
+        this.companyDescription.set(company.description || '');
+        this.companyCreatedAt.set(company.createdAt || '');
         this.loading.set(false);
+        // Sync context with current company
+        if (this.userContext && typeof this.userContext.setCompanyContext === 'function') {
+          this.userContext.setCompanyContext({ [company.id]: company.name }, company.id);
+        }
       },
       error: (error) => {
         console.error('Failed to load company:', error);
@@ -131,10 +93,31 @@ export class CompanyAccountComponent implements OnInit {
   loadAllCompanies() {
     this.companyService.getAllCompanies().subscribe({
       next: (companies) => {
-          this.companies.set(companies);
-          console.log('DEBUG: companies signal set:', companies);
-          this.loading.set(false);
-          this.message.set(`✅ Loaded ${companies.length} companies`);
+        // companies is always an array
+        this.companies.set(companies);
+        // Update user context with latest companyIds and names
+        if (this.userContext && typeof this.userContext.setCompanyContext === 'function') {
+          const companyMap: Record<string, string> = {};
+          companies.forEach((c: any) => { companyMap[c.id] = c.name; });
+          // Use selectedCompanyId if present, else first company
+          const selectedId = this.companySelection.selectedCompanyId();
+          this.userContext.setCompanyContext(companyMap, selectedId || (companies[0]?.id ?? undefined));
+        }
+        // If selectedCompanyId is not in the loaded companies, reset to first
+        const selectedId = this.companySelection.selectedCompanyId();
+        if (!companies.some((c: any) => c.id === selectedId)) {
+          if (companies.length > 0) {
+            this.companySelection.setSelectedCompany(companies[0].id);
+            this.loadCompany(companies[0].id);
+          }
+        }
+        // Auto-select the first company if only one exists
+        else if (Array.isArray(companies) && companies.length === 1) {
+          this.companySelection.setSelectedCompany(companies[0].id);
+          this.loadCompany(companies[0].id);
+        }
+        this.loading.set(false);
+        this.message.set(`✅ Loaded ${companies.length} companies`);
       },
       error: (error) => {
         console.error('Failed to load companies:', error);
@@ -235,5 +218,13 @@ export class CompanyAccountComponent implements OnInit {
   viewTransactions(company: any) {
     // TODO: Implement view transactions
     console.log('View transactions for', company);
+  }
+
+  /**
+   * Handler for company dropdown change
+   */
+  onCompanyDropdownChange(selectedId: string) {
+    this.companySelection.setSelectedCompany(selectedId);
+    this.loadCompany(selectedId);
   }
 }

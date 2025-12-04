@@ -44,6 +44,8 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
   companySelection = inject(CompanySelectionService);
 
   ngOnInit() {
+    this.companySelection.restoreFromStorage();
+    this.userContext.refreshProfile();
       }
 
       ngOnDestroy() {
@@ -60,7 +62,7 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
   // Always reload employees on tab activation and company change
   private companyEffect = effect(() => {
     this.companySelection.selectedCompanyId();
-    this.loadEmployees();
+    this.loadEmployees(); // Always fetch live from backend
   });
 
   employees = signal<Employee[]>([]);

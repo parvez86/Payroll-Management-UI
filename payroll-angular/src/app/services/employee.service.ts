@@ -13,7 +13,6 @@ export class EmployeeService {
   private apiUrl = environment.apiUrl;
 
   getAll(status: string, companyId: string, page: number, size: number): Observable<any> {
-    // Always use filtered API for employee list retrieval
     const params = new HttpParams()
       .set('status', status)
       .set('companyId', companyId)

@@ -1,187 +1,87 @@
 <div class="company-container">
-  <h2 class="section-title">{{ pageTitle() }}</h2>
-
-  @if (isAdmin()) {
-    <!-- ADMIN: Multi-company view with cards -->
-    <div class="balance-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-      <div class="balance-label" style="color: white;">System Total Balance</div>
-      <div class="balance-amount" style="color: white;">{{ formatCurrency(systemBalance()) }}</div>
+  <!-- Info Section for All Companies -->
+  @if (!companyId()) {
+    <div class="info-section" style="background: #e3f0ff; border: 1px solid #b3d1ff; border-radius: 8px; padding: 18px 24px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px;">
+      <span style="font-size: 24px; color: #1976d2;">&#8505;</span>
+      <div style="font-size: 16px; color: #1976d2;">
+        You are viewing the <strong>system-wide</strong> company account overview.<br>
+        Select a specific company from the dropdown above to view its account details.
+      </div>
     </div>
-
-    <h3 style="margin: 24px 0 16px 0; font-size: 18px; color: #495057; font-weight: 600;">🏢 All Companies</h3>
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; margin-bottom: 24px;">
-      @if (companies().length === 0) {
-        <div style="grid-column: 1/-1; text-align: center; padding: 40px 0; color: #868e96; font-size: 18px;">
-          <span style="font-size: 32px;">🏢</span>
-          <div>No companies found. Please check your data or add a company.</div>
-        </div>
-      } @else {
+    <!-- Modern horizontal card list for all companies -->
+    @if (companies().length > 0) {
+      <div class="company-card-list" style="display: flex; gap: 32px; overflow-x: auto; padding-bottom: 24px;">
         @for (company of companies(); track company.id) {
-          <div style="border: 2px solid #e0e7ff; border-radius: 12px; padding: 20px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">
-            <h4 style="margin: 0 0 12px 0; font-size: 16px; color: #212529; font-weight: 600;">{{ company.name }}</h4>
-            <div style="margin: 12px 0;">
-              <div style="font-size: 12px; color: #6c757d; margin-bottom: 4px;">Balance</div>
-              <div style="font-size: 24px; color: #28a745; font-weight: 700;">{{ formatCurrency(company.mainAccount?.currentBalance || 0) }}</div>
-            </div>
-            <div style="margin: 12px 0; padding: 8px; background: #f8f9fa; border-radius: 6px; font-size: 13px;">
-              <div><strong>Account Number:</strong> {{ company.mainAccount?.accountNumber }}</div>
-              <div><strong>Account Type:</strong> {{ company.mainAccount?.accountType }}</div>
-              <div><strong>Branch:</strong> {{ company.mainAccount?.branchName }}</div>
-              <div *ngIf="company.mainAccount?.overdraftLimit > 0"><strong>Overdraft Limit:</strong> {{ formatCurrency(company.mainAccount?.overdraftLimit) }}</div>
-              <div><strong>Status:</strong> 
-                <span [ngStyle]="{color: company.mainAccount?.status === 'ACTIVE' ? '#28a745' : '#dc3545'}">
+          <div class="company-card" style="background: #fff; border-radius: 16px; box-shadow: 0 2px 8px #e0e7ff; min-width: 320px; padding: 28px 24px; display: flex; flex-direction: column; align-items: flex-start;">
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+              <div class="company-icon" style="width: 48px; height: 48px; border-radius: 50%; background: #e3f0ff; display: flex; align-items: center; justify-content: center; font-size: 2em; font-weight: 700; color: #1976d2;">
+                {{ company.name.charAt(0) }}
+              </div>
+              <div>
+                <div style="font-size: 1.2em; font-weight: 700;">{{ company.name }}</div>
+                <span class="status-badge" [ngStyle]="{color: company.mainAccount?.status === 'ACTIVE' ? '#28a745' : '#dc3545', 'font-weight': 'bold', 'font-size': '0.95em'}">
                   {{ company.mainAccount?.status }}
                 </span>
               </div>
-              <div><strong>Owner Type:</strong> {{ company.mainAccount?.ownerType }}</div>
             </div>
-            <button 
-              (click)="companySelection.setSelectedCompany(company.id); topUpAmount.set(10000); openTopUpModal()"
-              style="width: 100%; padding: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 12px;">
-              ➕ Top Up
+            <div style="font-size: 1.1em; margin-bottom: 8px;">
+              <b>Balance:</b> <span [ngStyle]="{color: company.mainAccount?.currentBalance >= 0 ? '#28a745' : '#dc3545', 'font-weight': 'bold'}">{{ formatCurrency(company.mainAccount?.currentBalance || 0) }}</span>
+            </div>
+            <div style="font-size: 0.95em; color: #666; margin-bottom: 8px;">
+              <b>Account #:</b> <span class="mono">{{ company.mainAccount?.accountNumber }}</span>
+            </div>
+            <div style="font-size: 0.95em; color: #666; margin-bottom: 8px;">
+              <b>Branch:</b> {{ company.mainAccount?.branchName }}
+            </div>
+            <button style="margin-top: auto; background: #1976d2; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-weight: 600; cursor: pointer;">
+              View Account
             </button>
           </div>
         }
-      }
+      </div>
+      <div class="system-summary-card" style="background: #f6f8fa; border-radius: 10px; box-shadow: 0 2px 8px #e0e7ff; padding: 20px 32px; font-size: 1.1em; font-weight: 600; margin-top: 12px;">
+        <div><b>Total Companies:</b> {{ companies().length }}</div>
+        <div><b>System Total Balance:</b> {{ formatCurrency(systemBalance()) }}</div>
+      </div>
+    } @else {
+      <div class="company-card" style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #e0e7ff; padding: 48px 48px; text-align: center; color: #888; font-size: 1.2em; margin: 0 auto;">
+        <span style="font-size: 2em;">&#128711;</span>
+        <div>No companies found.<br>Please check your data or add a company.</div>
+      </div>
+    }
+  }
+
+  <!-- Single Company View -->
+  @if (companyName() && companyId()) {
+    <div class="company-card" style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #e0e7ff; padding: 24px 28px; margin-bottom: 28px;">
+      <div class="company-header" style="display: flex; align-items: center; gap: 12px; font-size: 1.3em; font-weight: 700;">
+        <span class="company-name">{{ companyName() }}</span>
+        <span class="status-badge" [ngStyle]="{color: accountInfo?.status === 'ACTIVE' ? '#28a745' : '#dc3545', 'font-weight': 'bold'}">{{ accountInfo?.status }}</span>
+      </div>
+      <div class="company-meta-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 32px; font-size: 1em;">
+        <div><b>Description:</b> {{ companyDescription() }}</div>
+        <div><b>Created At:</b> {{ companyCreatedAt() | date:'medium' }}</div>
+        <div><b>Company ID:</b> <span class="mono">{{ companyId() }}</span></div>
+      </div>
     </div>
-  } @else {
-    <!-- EMPLOYER/EMPLOYEE: Single account view -->
-    <div class="balance-card">
-      <div class="balance-label">
-        @if (isEmployee()) {
-          My Account Balance
-        } @else {
-          Company Balance
-        }
+    <div class="account-info-card" style="background: #f6f8fa; border-radius: 10px; box-shadow: 0 2px 8px #e0e7ff; padding: 24px 32px; margin-bottom: 24px;">
+      <div class="account-title" style="font-size: 1.2em; font-weight: 600; margin-bottom: 18px; color: #1976d2; display: flex; align-items: center; gap: 8px;">
+        <span>🏦</span> Account Information
       </div>
-      <div class="balance-amount" [class.negative]="balance() < 0">
-        {{ formatCurrency(balance()) }}
+      <div class="account-details-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px 32px;">
+        <div><b>Account Name:</b> {{ accountInfo.accountName }}</div>
+        <div><b>Account Number:</b> <span class="mono">{{ accountInfo.accountNumber }}</span></div>
+        <div><b>Account Type:</b> {{ accountInfo.accountType }}</div>
+        <div><b>Current Balance:</b> <span class="balance positive" [ngStyle]="{color: accountInfo.currentBalance >= 0 ? '#28a745' : '#dc3545', 'font-weight': 'bold'}">BDT {{ accountInfo.currentBalance }}</span></div>
+        <div *ngIf="accountInfo.overdraftLimit > 0"><b>Overdraft Limit:</b> {{ formatCurrency(accountInfo.overdraftLimit) }}</div>
+        <div><b>Branch:</b> {{ accountInfo.branchName }}</div>
+        <div><b>Status:</b> <span class="status-badge active" [ngStyle]="{color: accountInfo.status === 'ACTIVE' ? '#28a745' : '#dc3545', 'font-weight': 'bold'}">{{ accountInfo.status }}</span></div>
+        <div><b>Owner Type:</b> {{ accountInfo.ownerType }}</div>
       </div>
-      <div style="margin: 12px 0; padding: 8px; background: #f8f9fa; border-radius: 6px; font-size: 13px;">
-        <div><strong>Account Number:</strong> {{ accountInfo?.accountNumber }}</div>
-        <div><strong>Account Type:</strong> {{ accountInfo?.accountType }}</div>
-        <div><strong>Branch:</strong> {{ accountInfo?.branchName }}</div>
-        <div *ngIf="accountInfo?.overdraftLimit > 0"><strong>Overdraft Limit:</strong> {{ formatCurrency(accountInfo?.overdraftLimit) }}</div>
-        <div><strong>Status:</strong> 
-          <span [ngStyle]="{color: accountInfo?.status === 'ACTIVE' ? '#28a745' : '#dc3545'}">
-            {{ accountInfo?.status }}
-          </span>
-        </div>
-        <div><strong>Owner Type:</strong> {{ accountInfo?.ownerType }}</div>
-      </div>
-      @if (canTopUp()) {
-        <button (click)="openTopUpModal()" class="top-up-button">
-          ➕ {{ topUpLabel() }}
-        </button>
-      }
     </div>
   }
 
-  <!-- Expandable Account Information -->
-  @if (accountInfo) {
-    <div class="info-section" style="margin-top: 24px; border: 2px solid #e0e7ff; border-radius: 12px; overflow: hidden;">
-      <button 
-        (click)="showAccountDetails.set(!showAccountDetails())"
-        class="expandable-header"
-        style="width: 100%; padding: 16px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-size: 16px; font-weight: 600;">
-        <span>📊 Account Information</span>
-        <span style="font-size: 20px;">{{ showAccountDetails() ? '▼' : '▶' }}</span>
-      </button>
-      @if (showAccountDetails()) {
-        <div class="account-details" style="padding: 20px; background: #f8f9fa;">
-          <div class="info-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
-            @if (accountInfo?.accountName) {
-              <div class="info-item">
-                <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">💼 Account Name</div>
-                <div class="info-value" style="font-size: 15px; color: #212529; font-weight: 500;">{{ accountInfo?.accountName }}</div>
-              </div>
-            }
-            @if (accountInfo?.accountNumber) {
-              <div class="info-item">
-                <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">🔢 Account Number</div>
-                <div class="info-value" style="font-size: 15px; color: #212529; font-weight: 500; font-family: monospace;">{{ accountInfo?.accountNumber }}</div>
-              </div>
-            }
-            @if (accountInfo?.accountType) {
-              <div class="info-item">
-                <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">🏦 Account Type</div>
-                <div class="info-value" style="font-size: 15px; color: #212529; font-weight: 500;">{{ accountInfo?.accountType }}</div>
-              </div>
-            }
-            @if (accountInfo?.currentBalance !== undefined) {
-              <div class="info-item">
-                <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">💰 Current Balance</div>
-                <div class="info-value" style="font-size: 15px; color: #28a745; font-weight: 600;">{{ formatCurrency(accountInfo?.currentBalance) }}</div>
-              </div>
-            }
-            @if (accountInfo?.overdraftLimit !== undefined && accountInfo?.overdraftLimit > 0) {
-              <div class="info-item">
-                <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">🚨 Overdraft Limit</div>
-                <div class="info-value" style="font-size: 15px; color: #dc3545; font-weight: 500;">{{ formatCurrency(accountInfo?.overdraftLimit) }}</div>
-              </div>
-            }
-            @if (accountInfo?.branchName) {
-              <div class="info-item">
-                <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">🏪 Branch</div>
-                <div class="info-value" style="font-size: 15px; color: #212529; font-weight: 500;">{{ accountInfo?.branchName }}</div>
-              </div>
-            }
-            @if (accountInfo?.status) {
-              <div class="info-item">
-                <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">✅ Status</div>
-                <div class="info-value">
-                  @if (accountInfo?.status === 'ACTIVE') {
-                    <span style="display: inline-block; padding: 4px 12px; background: #d4edda; color: #155724; border-radius: 12px; font-size: 13px; font-weight: 600;">✅ ACTIVE</span>
-                  } @else {
-                    <span style="display: inline-block; padding: 4px 12px; background: #f8d7da; color: #721c24; border-radius: 12px; font-size: 13px; font-weight: 600;">⚠️ {{ accountInfo?.status }}</span>
-                  }
-                </div>
-              </div>
-            }
-            @if (accountInfo?.ownerType) {
-              <div class="info-item">
-                <div class="info-label" style="font-size: 12px; color: #6c757d; font-weight: 600; margin-bottom: 4px;">👤 Owner Type</div>
-                <div class="info-value" style="font-size: 15px; color: #212529; font-weight: 500;">{{ accountInfo?.ownerType }}</div>
-              </div>
-            }
-          </div>
-        </div>
-      }
-    </div>
-  }
-
-  <!-- Top-up Modal -->
-  @if (isTopUpModalOpen()) {
-    <div class="modal-overlay" (click)="closeTopUpModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <h3 class="modal-title">💰 Top Up Company Account</h3>
-        <div class="modal-body">
-          <div class="form-group">
-            <label class="form-label">Amount (BDT)</label>
-            <input 
-              type="number" 
-              class="form-input"
-              [ngModel]="topUpAmount()"
-              (ngModelChange)="topUpAmount.set(+$event)"
-              min="1000"
-              max="1000000"
-              placeholder="Enter amount (min: 1,000)"
-            />
-          </div>
-          <p class="info-text">
-            💡 Minimum: 1,000 BDT | Maximum: 10,00,000 BDT
-          </p>
-        </div>
-        <div class="modal-actions">
-          <button (click)="closeTopUpModal()" class="btn btn-secondary">Cancel</button>
-          <button (click)="handleTopUp()" class="btn btn-primary">Add Funds</button>
-        </div>
-      </div>
-    </div>
-  }
+  <!-- Loading and Error States -->
+  <app-loading-spinner [loading]="loading()" message="Loading company info..." />
+  <app-toast-message [message]="message()" (close)="clearMessage()" />
 </div>
-
-<!-- Toast and spinner must be outside the main container to avoid extra closing div -->
-<app-toast-message [message]="message()" (close)="clearMessage()" />
-<app-loading-spinner [loading]="loading()" message="Processing..." />
