@@ -5,8 +5,6 @@
 **Multi-frontend monorepo** for a Payroll Management System with grade-based salary calculations and role-based access control.
 
 ### Active Codebases
-- **`payroll-frontend/`** - React 19 + TypeScript + Vite (95% complete, production-ready)
-- **`payroll-angular/`** - Angular 21 + Standalone Components + Signals (95% complete)
   - ✅ Component extraction, RBAC via `UserContextService`, HTTP interceptors, routing, guards
   - 🔄 Final integration testing
 
@@ -55,22 +53,10 @@ USE_MOCK_API: true   // Mock data (src/mocks/mockAPI.ts, 10 predefined employees
 ## 🏗️ Architecture Patterns
 
 ### React State Management (Context API, NO Redux)
-- `AuthContext` - JWT tokens, user session, login/logout
-- `EmployeeContext` - Employee CRUD, grade validation
-- `CompanyContext` - Account balance, transactions, top-up
-- `StatusMessageContext` - Global toast notifications
 
 **Usage**: `const { user, login } = useAuth();`
 
 ### Angular Modern Patterns (Angular 21, enforced in `payroll-angular/AGENTS.md`)
-- **Standalone components** (default, NEVER set `standalone: true`)
-- **Signals** (`signal()`, `computed()`, NEVER `mutate()` - use `update()` or `set()`)
-- **`inject()` function** (not constructor injection)
-- **Native control flow** (`@if`, `@for`, `@switch` instead of `*ngIf`, `*ngFor`, `*ngSwitch`)
-- **Input/Output functions** (`input()`, `output()` instead of `@Input()`, `@Output()`)
-- **OnPush change detection** (`changeDetection: ChangeDetectionStrategy.OnPush`)
-- **Host bindings** (`host: {...}` in decorator, NOT `@HostBinding`)
-- **No ngClass/ngStyle** (use `[class.foo]`, `[style.color]`)
 
 ### RBAC Implementation (Angular)
 **`UserContextService`** provides centralized role-based access control:
@@ -109,16 +95,8 @@ GET  /company/transactions          # Transaction history
 ```
 
 ### React API Layer (`payroll-frontend/src/services/api.ts`)
-- **Axios instance** with request/response interceptors
-- **JWT auto-injection**: Reads `localStorage.accessToken`, adds `Bearer ${token}` header
-- **Dynamic imports**: Mock vs real API based on `config.USE_MOCK_API`
-- **Error handling**: Try-catch, errors shown via `StatusMessageContext`
 
 ### Angular API Layer
-- **`HttpClient`** with functional interceptor (`auth.interceptor.ts`)
-- **Auto-injects JWT**: Same pattern as React
-- **RxJS observables**: Services return `Observable<T>`, components subscribe
-- **Login flow**: `/auth/login` → store tokens → `/auth/me` → store profile + company context
 
 ## 📂 Component Architecture
 
@@ -142,63 +120,22 @@ shared/        → toast-message.component.ts, loading-spinner.component.ts
 ```
 
 **Angular Services** (`payroll-angular/src/app/services/`):
-- `auth.service.ts` - Login: `/auth/login` → store tokens → `/auth/me` → store profile
-- `user-context.service.ts` - **RBAC**: Signal-based role checks (isAdmin, isEmployer, isEmployee)
-- `employee.service.ts`, `payroll.service.ts`, `company.service.ts` - Domain services
-- `company-selection.service.ts` - Multi-company context (ADMIN/EMPLOYER)
-- `grade.service.ts`, `branch.service.ts`, `transaction.service.ts` - Supporting services
 
 ## 📁 Workspace Structure & Navigation
 
 **Root Level**:
-- `development.md` - Master dev plan, domain model, backend structure (625 lines - READ THIS FIRST for architecture)
-- `ANGULAR_MIGRATION_MASTER_PLAN.md` - Complete React→Angular migration strategy with 1:1 component mappings
-- `docs/` - Cross-cutting documentation (API reference, implementation status)
-- `payroll-frontend/` - React app (primary codebase)
-- `payroll-angular/` - Angular app (migration target)
 
 **Working in React** (`payroll-frontend/`):
-- Start here: `payroll-frontend/src/config/index.ts` - Toggle `USE_MOCK_API` for dev mode
-- Business logic: `payroll-frontend/src/utils/salaryCalculator.ts` - ALL salary calculations (NEVER duplicate)
-- API layer: `payroll-frontend/src/services/api.ts` - Dynamically loads mock vs real API
-- Mock data: `payroll-frontend/src/mocks/mockAPI.ts` - 10 predefined employees for offline dev
-- Entry point: `payroll-frontend/src/App.tsx` → imports `App-real-backend.tsx`
-- Context providers: `payroll-frontend/src/contexts/` - Auth, Employee, Company, StatusMessage
 
 **Working in Angular** (`payroll-angular/`):
-- Read first: `payroll-angular/AGENTS.md` - Angular 21 best practices (canonical reference)
-- Components: `payroll-angular/src/app/components/` - Modular structure (auth, employee, payroll, company, dashboard, shared)
-- Services: `payroll-angular/src/app/services/` - Injectable services with signals
-- Routing: `payroll-angular/src/app/app.routes.ts` - `/login`, `/dashboard/*` with guards
-- Interceptor: `payroll-angular/src/app/interceptors/auth.interceptor.ts` - Auto-adds JWT to requests
-- Entry: `payroll-angular/src/app/app.ts` - Root component with `<router-outlet>`
 
 ### Critical Files (React)
-- `payroll-frontend/src/utils/salaryCalculator.ts` - **Core business logic** (salary formula, validation)
-- `payroll-frontend/src/config/index.ts` - Business rules, API config, environment settings
-- `payroll-frontend/src/services/api.ts` - Real API integration with JWT handling
-- `payroll-frontend/src/mocks/mockAPI.ts` - Development mock data (10 employees)
-- `payroll-frontend/src/App.tsx` - Main router, imports `App-real-backend.tsx`
 
 ### Critical Files (Angular)
-- `payroll-angular/AGENTS.md` - **Must-read** Angular 21 patterns (signals, inject, control flow)
-- `payroll-angular/src/app/services/auth.service.ts` - Login flow: `/auth/login` → store tokens → `/auth/me` → store profile + company context
-- `payroll-angular/src/app/services/user-context.service.ts` - **Centralized RBAC**: signal-based role checks (isAdmin, isEmployer, isEmployee), company context
-- `payroll-angular/src/app/interceptors/auth.interceptor.ts` - Functional interceptor: injects `Bearer ${token}` header automatically
-- `payroll-angular/src/app/guards/auth.guard.ts` - Checks `localStorage.accessToken` before route activation
-- `payroll-angular/src/environments/environment.ts` - API base URL configuration
 
 ### Documentation
-- `README.md` - Project overview, quick start, architecture
-- `development.md` - Master development plan, domain model, backend structure
-- `docs/IMPLEMENTATION_STATUS.md` - Feature completion tracking (90-95% done)
-- `payroll-frontend/docs/` - Detailed architecture, business logic, testing, API verification
 
 ### Angular Migration
-- `ANGULAR_MIGRATION_MASTER_PLAN.md` - Complete 1:1 React → Angular migration strategy with component mappings
-- `payroll-frontend/migration/angular/` - Migration plan, checklist, reusable assets
-- `payroll-angular/AGENTS.md` - Angular 21 best practices for AI agents (canonical reference)
-- `payroll-angular/.github/copilot-instructions.md` - Angular-specific AI guidelines
 
 ## ⚠️ Common Pitfalls
 
@@ -225,7 +162,6 @@ shared/        → toast-message.component.ts, loading-spinner.component.ts
 
 ## 📊 Project Status (December 2025)
 
-- **React Frontend**: 95% complete, production-ready, real API integrated
   - ✅ All CRUD operations working
   - ✅ JWT authentication with token refresh
   - ✅ Mock API mode for offline development
@@ -233,7 +169,6 @@ shared/        → toast-message.component.ts, loading-spinner.component.ts
   - ✅ Salary calculations with grade validation
   - ⚠️ No automated tests yet (see `payroll-frontend/src/utils/integrationTester.ts` for manual testing)
 
-- **Angular Frontend**: 95% complete, component-based architecture ready
   - ✅ Simulator (standalone UI prototype with mock data in `src/app/simulator/`)
   - ✅ Real API services (auth, employee, payroll, company)
   - ✅ HTTP interceptor with JWT injection
@@ -242,12 +177,10 @@ shared/        → toast-message.component.ts, loading-spinner.component.ts
   - ✅ Shared components (toast, loading spinner)
   - 🔄 Final integration testing with real backend (components ready, need E2E validation)
 
-- **Backend Integration**: Complete, JWT authentication working
   - ✅ Spring Boot 3.5.6 API at `localhost:20001`
   - ✅ All endpoints documented in `docs/api-documentation.md`
   - ✅ Response format: `{ success, message, data }`
 
-- **Known Issues**: None blocking
   - See `docs/IMPLEMENTATION_STATUS.md` for detailed feature tracking
   - See `docs/angular-migration/COMPONENT-EXTRACTION-COMPLETE.md` for Angular migration status
 

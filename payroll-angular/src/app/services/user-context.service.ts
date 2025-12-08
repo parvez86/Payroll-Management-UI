@@ -62,10 +62,11 @@ export class UserContextService {
    */
   private loadUserProfile(): void {
     if (typeof window === 'undefined') return;
-    
+    // Only load if authenticated
+    const accessToken = window.localStorage.getItem('accessToken');
+    if (!accessToken) return;
     const str = window.localStorage.getItem('userProfile');
     if (!str) return;
-    
     try {
       const profile = JSON.parse(str);
       this.userProfile.set(profile);
@@ -120,14 +121,13 @@ export class UserContextService {
   setCompanyContext(companyIds: Record<string, string>, selectedCompanyId?: string): void {
     const profile = this.userProfile();
     if (!profile) return;
-    // Convert companyIds map to array if needed
+    // Only update companyIds, never selection
     profile.companyIds = Object.entries(companyIds).map(([companyId, companyName]) => ({ companyId, companyName }));
-    if (selectedCompanyId) profile.companyId = selectedCompanyId;
     this.userProfile.set(profile);
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem('userProfile', JSON.stringify(profile));
     }
-    console.log('👤 Company context updated:', { companyIds, selectedCompanyId });
+    console.log('👤 Company context updated:', { companyIds });
   }
   
   // Permission helpers

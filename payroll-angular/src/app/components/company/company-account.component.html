@@ -1,6 +1,38 @@
 <div class="company-container">
   <!-- Info Section for All Companies -->
-  @if (!companyId()) {
+  @if (companyId()) {
+    <!-- Single company selected: show only that company card -->
+    @for (company of selectedCompanyList; track company.id) {
+      <div class="company-card-list" style="display: flex; gap: 32px; overflow-x: auto; padding-bottom: 24px;">
+        <div class="company-card" style="background: #fff; border-radius: 16px; box-shadow: 0 2px 8px #e0e7ff; min-width: 320px; padding: 28px 24px; display: flex; flex-direction: column; align-items: flex-start;">
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+            <div class="company-icon" style="width: 48px; height: 48px; border-radius: 50%; background: #e3f0ff; display: flex; align-items: center; justify-content: center; font-size: 2em; font-weight: 700; color: #1976d2;">
+              {{ company.name?.charAt(0) || '?' }}
+            </div>
+            <div>
+              <div style="font-size: 1.2em; font-weight: 700;">{{ company.name || 'Unnamed' }}</div>
+              <span class="status-badge" [ngStyle]="{color: company.mainAccount?.status === 'ACTIVE' ? '#28a745' : '#dc3545', 'font-weight': 'bold', 'font-size': '0.95em'}">
+                {{ company.mainAccount?.status || 'UNKNOWN' }}
+              </span>
+            </div>
+          </div>
+          <div style="font-size: 1.1em; margin-bottom: 8px;">
+            <b>Balance:</b> <span [ngStyle]="{color: company.mainAccount?.currentBalance >= 0 ? '#28a745' : '#dc3545', 'font-weight': 'bold'}">{{ formatCurrency(company.mainAccount?.currentBalance ?? 0) }}</span>
+          </div>
+          <div style="font-size: 0.95em; color: #666; margin-bottom: 8px;">
+            <b>Account #:</b> <span class="mono">{{ company.mainAccount?.accountNumber ?? '-' }}</span>
+          </div>
+          <div style="font-size: 0.95em; color: #666; margin-bottom: 8px;">
+            <b>Branch:</b> {{ company.mainAccount?.branchName ?? '-' }}
+          </div>
+          <button (click)="viewAccount(company.id)" style="margin-top: auto; background: #1976d2; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-weight: 600; cursor: pointer;">
+            View Account
+          </button>
+        </div>
+      </div>
+    }
+  } @else {
+    <!-- All companies: show info section, all cards, and system summary -->
     <div class="info-section" style="background: #e3f0ff; border: 1px solid #b3d1ff; border-radius: 8px; padding: 18px 24px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px;">
       <span style="font-size: 24px; color: #1976d2;">&#8505;</span>
       <div style="font-size: 16px; color: #1976d2;">
@@ -8,40 +40,39 @@
         Select a specific company from the dropdown above to view its account details.
       </div>
     </div>
-    <!-- Modern horizontal card list for all companies -->
-    @if (companies().length > 0) {
+    @if (hasCompanies()) {
       <div class="company-card-list" style="display: flex; gap: 32px; overflow-x: auto; padding-bottom: 24px;">
-        @for (company of companies(); track company.id) {
+        @for (company of companies; track company.id) {
           <div class="company-card" style="background: #fff; border-radius: 16px; box-shadow: 0 2px 8px #e0e7ff; min-width: 320px; padding: 28px 24px; display: flex; flex-direction: column; align-items: flex-start;">
             <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
               <div class="company-icon" style="width: 48px; height: 48px; border-radius: 50%; background: #e3f0ff; display: flex; align-items: center; justify-content: center; font-size: 2em; font-weight: 700; color: #1976d2;">
-                {{ company.name.charAt(0) }}
+                {{ company.name?.charAt(0) || '?' }}
               </div>
               <div>
-                <div style="font-size: 1.2em; font-weight: 700;">{{ company.name }}</div>
+                <div style="font-size: 1.2em; font-weight: 700;">{{ company.name || 'Unnamed' }}</div>
                 <span class="status-badge" [ngStyle]="{color: company.mainAccount?.status === 'ACTIVE' ? '#28a745' : '#dc3545', 'font-weight': 'bold', 'font-size': '0.95em'}">
-                  {{ company.mainAccount?.status }}
+                  {{ company.mainAccount?.status || 'UNKNOWN' }}
                 </span>
               </div>
             </div>
             <div style="font-size: 1.1em; margin-bottom: 8px;">
-              <b>Balance:</b> <span [ngStyle]="{color: company.mainAccount?.currentBalance >= 0 ? '#28a745' : '#dc3545', 'font-weight': 'bold'}">{{ formatCurrency(company.mainAccount?.currentBalance || 0) }}</span>
+              <b>Balance:</b> <span [ngStyle]="{color: company.mainAccount?.currentBalance >= 0 ? '#28a745' : '#dc3545', 'font-weight': 'bold'}">{{ formatCurrency(company.mainAccount?.currentBalance ?? 0) }}</span>
             </div>
             <div style="font-size: 0.95em; color: #666; margin-bottom: 8px;">
-              <b>Account #:</b> <span class="mono">{{ company.mainAccount?.accountNumber }}</span>
+              <b>Account #:</b> <span class="mono">{{ company.mainAccount?.accountNumber ?? '-' }}</span>
             </div>
             <div style="font-size: 0.95em; color: #666; margin-bottom: 8px;">
-              <b>Branch:</b> {{ company.mainAccount?.branchName }}
+              <b>Branch:</b> {{ company.mainAccount?.branchName ?? '-' }}
             </div>
-            <button style="margin-top: auto; background: #1976d2; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-weight: 600; cursor: pointer;">
+            <button (click)="viewAccount(company.id)" style="margin-top: auto; background: #1976d2; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-weight: 600; cursor: pointer;">
               View Account
             </button>
           </div>
         }
       </div>
       <div class="system-summary-card" style="background: #f6f8fa; border-radius: 10px; box-shadow: 0 2px 8px #e0e7ff; padding: 20px 32px; font-size: 1.1em; font-weight: 600; margin-top: 12px;">
-        <div><b>Total Companies:</b> {{ companies().length }}</div>
-        <div><b>System Total Balance:</b> {{ formatCurrency(systemBalance()) }}</div>
+        <div><b>Total Companies:</b> {{ companies.length }}</div>
+        <div><b>Company Balance:</b> {{ formatCurrency(selectedCompanyDetails()?.mainAccount?.currentBalance ?? systemBalance) }}</div>
       </div>
     } @else {
       <div class="company-card" style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #e0e7ff; padding: 48px 48px; text-align: center; color: #888; font-size: 1.2em; margin: 0 auto;">
@@ -51,35 +82,6 @@
     }
   }
 
-  <!-- Single Company View -->
-  @if (companyName() && companyId()) {
-    <div class="company-card" style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #e0e7ff; padding: 24px 28px; margin-bottom: 28px;">
-      <div class="company-header" style="display: flex; align-items: center; gap: 12px; font-size: 1.3em; font-weight: 700;">
-        <span class="company-name">{{ companyName() }}</span>
-        <span class="status-badge" [ngStyle]="{color: accountInfo?.status === 'ACTIVE' ? '#28a745' : '#dc3545', 'font-weight': 'bold'}">{{ accountInfo?.status }}</span>
-      </div>
-      <div class="company-meta-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 32px; font-size: 1em;">
-        <div><b>Description:</b> {{ companyDescription() }}</div>
-        <div><b>Created At:</b> {{ companyCreatedAt() | date:'medium' }}</div>
-        <div><b>Company ID:</b> <span class="mono">{{ companyId() }}</span></div>
-      </div>
-    </div>
-    <div class="account-info-card" style="background: #f6f8fa; border-radius: 10px; box-shadow: 0 2px 8px #e0e7ff; padding: 24px 32px; margin-bottom: 24px;">
-      <div class="account-title" style="font-size: 1.2em; font-weight: 600; margin-bottom: 18px; color: #1976d2; display: flex; align-items: center; gap: 8px;">
-        <span>🏦</span> Account Information
-      </div>
-      <div class="account-details-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px 32px;">
-        <div><b>Account Name:</b> {{ accountInfo.accountName }}</div>
-        <div><b>Account Number:</b> <span class="mono">{{ accountInfo.accountNumber }}</span></div>
-        <div><b>Account Type:</b> {{ accountInfo.accountType }}</div>
-        <div><b>Current Balance:</b> <span class="balance positive" [ngStyle]="{color: accountInfo.currentBalance >= 0 ? '#28a745' : '#dc3545', 'font-weight': 'bold'}">BDT {{ accountInfo.currentBalance }}</span></div>
-        <div *ngIf="accountInfo.overdraftLimit > 0"><b>Overdraft Limit:</b> {{ formatCurrency(accountInfo.overdraftLimit) }}</div>
-        <div><b>Branch:</b> {{ accountInfo.branchName }}</div>
-        <div><b>Status:</b> <span class="status-badge active" [ngStyle]="{color: accountInfo.status === 'ACTIVE' ? '#28a745' : '#dc3545', 'font-weight': 'bold'}">{{ accountInfo.status }}</span></div>
-        <div><b>Owner Type:</b> {{ accountInfo.ownerType }}</div>
-      </div>
-    </div>
-  }
 
   <!-- Loading and Error States -->
   <app-loading-spinner [loading]="loading()" message="Loading company info..." />

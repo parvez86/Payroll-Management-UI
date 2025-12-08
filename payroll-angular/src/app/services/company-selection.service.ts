@@ -24,6 +24,9 @@ export class CompanySelectionService {
     return id === '' ? undefined : id;
   });
   
+  companies = signal<any[]>([]);
+  systemBalance = computed(() => this.companies().reduce((sum, c: any) => sum + (c.mainAccount?.currentBalance || 0), 0));
+  
   /**
    * Set the selected company
    * @param companyId - Company UUID or empty string for all companies

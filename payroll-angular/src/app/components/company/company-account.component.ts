@@ -1,4 +1,5 @@
 import { Component, signal, inject, OnInit, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Router } from '@angular/router';
 import { effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -19,6 +20,20 @@ import { LoadingSpinnerComponent } from '../shared/loading-spinner.component';
   styleUrls: ['./company-account.component.css']
 })
 export class CompanyAccountComponent implements OnInit {
+  private router = inject(Router);
+        // Navigate to company details page
+        viewAccount(id: string) {
+          this.router.navigate(['/dashboard/company', id]);
+        }
+      // Helper to check if companies() is a non-empty array (for template)
+      get companies() { return this.companySelection.companies(); }
+      get systemBalance() { return this.companySelection.systemBalance(); }
+      get selectedCompanyList() {
+        const id = this.companyId();
+        if (!id) return this.companies;
+        return this.companies.filter((c: any) => c.id === id);
+      }
+      hasCompanies = computed(() => Array.isArray(this.companies) && this.companies.length > 0);
     // Always reload company account data on tab activation and company change
   private companyService = inject(CompanyService);
   private employeeService = inject(EmployeeService);
@@ -32,12 +47,6 @@ export class CompanyAccountComponent implements OnInit {
   accountInfo: any = null;
   showAccountDetails = signal(true);
   
-  // Multi-company support for ADMIN
-  companies = signal<any[]>([]);
-  systemBalance = computed(() => {
-    return this.companies().reduce((sum, c) => sum + (c.mainAccount?.currentBalance || 0), 0);
-  });
-  
   // Role checks
   isEmployee = computed(() => this.userContext.isEmployee());
   isAdmin = computed(() => this.userContext.isAdmin());
@@ -49,7 +58,6 @@ export class CompanyAccountComponent implements OnInit {
   topUpLabel = computed(() => this.userContext.getTopUpLabel());
 
   ngOnInit() {
-    this.companySelection.restoreFromStorage();
     this.userContext.refreshProfile();
     // No effect() here! Do not override dropdown selection.
   }
@@ -59,8 +67,9 @@ export class CompanyAccountComponent implements OnInit {
     if (!selectedId) {
       // All Companies: fetch list, sum balances, show system info
       this.loadAllCompanies();
+      this.selectedCompanyDetails.set(null);
     } else {
-      // Specific company: fetch and show only that company's info
+      // Reload data for selected company in-place
       this.loadCompany(selectedId);
     }
   });
@@ -68,15 +77,17 @@ export class CompanyAccountComponent implements OnInit {
   // Add new signals for company description and created date (declare only once)
   companyDescription = signal('');
   companyCreatedAt = signal('');
+  selectedCompanyDetails = signal<any>(null);
 
   loadCompany(id: string) {
     this.companyService.getCompany(id).subscribe({
       next: (company) => {
-        this.balance.set(company.mainAccount.currentBalance);
+        this.balance.set(company.mainAccount?.currentBalance ?? 0);
         this.companyName.set(company.name);
         this.accountInfo = company.mainAccount;
         this.companyDescription.set(company.description || '');
         this.companyCreatedAt.set(company.createdAt || '');
+        this.selectedCompanyDetails.set(company); // <-- update signal
         this.loading.set(false);
         // Sync context with current company
         if (this.userContext && typeof this.userContext.setCompanyContext === 'function') {
@@ -93,26 +104,16 @@ export class CompanyAccountComponent implements OnInit {
   loadAllCompanies() {
     this.companyService.getAllCompanies().subscribe({
       next: (companies) => {
-        // companies is always an array
-        this.companies.set(companies);
+        this.companySelection.companies.set(companies); // Update global signal
         // Update user context with latest companyIds and names
         if (this.userContext && typeof this.userContext.setCompanyContext === 'function') {
           const companyMap: Record<string, string> = {};
           companies.forEach((c: any) => { companyMap[c.id] = c.name; });
-          // Use selectedCompanyId if present, else first company
-          const selectedId = this.companySelection.selectedCompanyId();
-          this.userContext.setCompanyContext(companyMap, selectedId || (companies[0]?.id ?? undefined));
+          this.userContext.setCompanyContext(companyMap);
         }
-        // If selectedCompanyId is not in the loaded companies, reset to first
+        // Only auto-select if there is no selection at all (first load)
         const selectedId = this.companySelection.selectedCompanyId();
-        if (!companies.some((c: any) => c.id === selectedId)) {
-          if (companies.length > 0) {
-            this.companySelection.setSelectedCompany(companies[0].id);
-            this.loadCompany(companies[0].id);
-          }
-        }
-        // Auto-select the first company if only one exists
-        else if (Array.isArray(companies) && companies.length === 1) {
+        if (!selectedId && companies.length === 1) {
           this.companySelection.setSelectedCompany(companies[0].id);
           this.loadCompany(companies[0].id);
         }

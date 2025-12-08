@@ -44,7 +44,6 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
   companySelection = inject(CompanySelectionService);
 
   ngOnInit() {
-    this.companySelection.restoreFromStorage();
     this.userContext.refreshProfile();
       }
 

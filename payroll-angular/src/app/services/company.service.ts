@@ -71,8 +71,14 @@ export class CompanyService {
     return this.http.get<any>(`${this.apiUrl}/companies`).pipe(
       map(response => {
         console.log('✅ All companies loaded, raw response:', response);
-        if (response.success && response.data) return response.data;
+        // Accept { success, data }, { success, companies }, or direct array
+        if (response.success && Array.isArray(response.data)) return response.data;
+        if (response.success && Array.isArray(response.companies)) return response.companies;
         if (Array.isArray(response)) return response;
+        // Fallback: try to find first array property
+        for (const key in response) {
+          if (Array.isArray(response[key])) return response[key];
+        }
         return [];
       })
     );

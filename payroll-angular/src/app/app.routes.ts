@@ -49,6 +49,10 @@ export const routes: Routes = [
         component: CompanyAccountComponent
       },
       {
+        path: 'company/:id',
+        loadComponent: () => import('./components/company/company-account-details.component').then(m => m.CompanyAccountDetailsComponent)
+      },
+      {
         path: 'transactions',
         component: TransactionListComponent
       }

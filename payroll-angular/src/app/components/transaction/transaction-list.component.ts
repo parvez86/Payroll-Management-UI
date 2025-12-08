@@ -94,8 +94,6 @@ export class TransactionListComponent implements OnInit {
   });
 
   ngOnInit() {
-    // Restore global selection on init
-    this.companySelection.restoreFromStorage();
     // Set default date range (last 30 days)
     const today = new Date();
     const thirtyDaysAgo = new Date();

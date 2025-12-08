@@ -179,6 +179,17 @@ export class AuthService {
       sessionStorage.removeItem('payrollBatchInfo');
       sessionStorage.removeItem('payrollBatchId');
       sessionStorage.removeItem('payrollBatchStatus');
+      localStorage.removeItem('lastRoute');
+      localStorage.removeItem('mockUser');
+      // Call CompanySelectionService.clear() to prevent unwanted resets
+      try {
+        const companySelectionService = (window as any).ng && (window as any).ng.getInjector && (window as any).ng.getInjector().get && (window as any).ng.getInjector().get('CompanySelectionService');
+        if (companySelectionService && typeof companySelectionService.clear === 'function') {
+          companySelectionService.clear();
+        }
+      } catch (e) {
+        // If not available, ignore
+      }
       console.log('✅ All authentication, company, and payroll data cleared from storage');
     }
   }

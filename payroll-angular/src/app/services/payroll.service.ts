@@ -142,9 +142,13 @@ export class PayrollService {
         // Store batch info in localStorage for UI logic (matching React pattern)
         if (response && response.id) {
           if (typeof window !== 'undefined' && window.localStorage) {
-            localStorage.setItem('payrollBatchId', response.id);
-            localStorage.setItem('payrollBatchStatus', response.payrollStatus || response.status);
-            localStorage.setItem('payrollBatchInfo', JSON.stringify(response));
+            // Only set if authenticated
+            const authService = (window as any).ng && (window as any).ng.getInjector && (window as any).ng.getInjector().get && (window as any).ng.getInjector().get('AuthService');
+            if (authService && typeof authService.isAuthenticated === 'function' && authService.isAuthenticated()) {
+              localStorage.setItem('payrollBatchId', response.id);
+              localStorage.setItem('payrollBatchStatus', response.payrollStatus || response.status);
+              localStorage.setItem('payrollBatchInfo', JSON.stringify(response));
+            }
           }
         }
         return response;

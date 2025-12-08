@@ -16,8 +16,8 @@
           </select>
         </div>
       }
-      <div class="company-balance" [class.negative]="companyAccountBalance() < 0" [title]="balanceTooltip()">
-        {{ balanceLabel() }}: {{ formatCurrency(companyAccountBalance()) }}
+      <div class="company-balance" [class.negative]="getCurrentBalance() < 0" [title]="balanceTooltip()">
+        {{ balanceLabel() }}: {{ formatCurrency(getCurrentBalance()) }}
       </div>
       <div class="user-info">
         👤 {{ userProfile()?.user?.username }}

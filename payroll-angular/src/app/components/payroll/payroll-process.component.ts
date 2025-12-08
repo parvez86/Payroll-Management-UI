@@ -50,7 +50,6 @@ export class PayrollProcessComponent implements OnInit {
   canProcessPayroll = computed(() => this.userContext.canProcessPayroll());
 
   ngOnInit() {
-    this.companySelection.restoreFromStorage();
     this.userContext.refreshProfile();
     // No effect() here!
   }
