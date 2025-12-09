@@ -110,7 +110,7 @@ export class TransactionListComponent implements OnInit {
   
   // Listen for global company selection changes (simple polling on each load call)
 
-  async loadTransactions() {
+  loadTransactions() {
     this.loading.set(true);
     const role = this.userContext.userRole();
     
@@ -148,26 +148,12 @@ export class TransactionListComponent implements OnInit {
         // EMPLOYER sees only own company transactions
         const companyId = this.userContext.companyId();
         if (companyId) {
-          // TODO: Backend should support filtering by companyId
-          // For now, client-side filter after loading
           filters.companyId = companyId;
         }
         break;
         
       case 'EMPLOYEE':
-        // EMPLOYEE sees only own + downstream transactions
-        // Get own and downstream employee account IDs
-        const employeeId = this.userContext.employeeId();
-        if (employeeId) {
-          try {
-            const accountIds = await this.getEmployeeAccountIds(employeeId);
-            // TODO: Backend should support filtering by multiple accountIds
-            // For now, filter client-side
-            filters.employeeAccountIds = accountIds;
-          } catch (error) {
-            console.error('Failed to get employee account IDs:', error);
-          }
-        }
+        // EMPLOYEE sees only own + downstream transactions (handled server-side if available, client-side fallback)
         break;
     }
 
@@ -176,18 +162,21 @@ export class TransactionListComponent implements OnInit {
         let transactions = response?.content || response;
         if (!Array.isArray(transactions)) transactions = [];
         
-        // Client-side role filtering (until backend supports it)
+        // Client-side role filtering (fallback)
         transactions = this.filterTransactionsByRole(transactions, role);
         
-        if (response?.content && Array.isArray(response.content)) {
-          this.transactions.set(transactions);
-          this.totalElements.set(transactions.length); // Use filtered count
-          this.totalPages.set(Math.ceil(transactions.length / this.pageSize()));
+        this.transactions.set(transactions);
+        
+        // Pagination: use actual backend response if available
+        if (response?.totalElements !== undefined) {
+          this.totalElements.set(response.totalElements);
+          this.totalPages.set(response.totalPages || Math.ceil(response.totalElements / this.pageSize()));
         } else {
-          this.transactions.set(transactions);
+          // Fallback for non-paginated response
           this.totalElements.set(transactions.length);
           this.totalPages.set(1);
         }
+        
         this.loading.set(false);
         const scopeLabel = role === 'ADMIN' ? 'system-wide' : role === 'EMPLOYER' ? 'company' : 'personal';
         this.message.set(`✅ Loaded ${this.totalElements()} ${scopeLabel} transactions`);

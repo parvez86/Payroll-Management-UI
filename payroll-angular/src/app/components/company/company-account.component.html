@@ -56,7 +56,7 @@
               </div>
             </div>
             <div style="font-size: 1.1em; margin-bottom: 8px;">
-              <b>Balance:</b> <span [ngStyle]="{color: company.mainAccount?.currentBalance >= 0 ? '#28a745' : '#dc3545', 'font-weight': 'bold'}">{{ formatCurrency(company.mainAccount?.currentBalance ?? 0) }}</span>
+              <b>Balance:</b> <span [ngStyle]="{color: (company.mainAccount?.currentBalance ?? 0) >= 0 ? '#28a745' : '#dc3545', 'font-weight': 'bold'}">{{ formatCurrency(company.mainAccount?.currentBalance ?? 0) }}</span>
             </div>
             <div style="font-size: 0.95em; color: #666; margin-bottom: 8px;">
               <b>Account #:</b> <span class="mono">{{ company.mainAccount?.accountNumber ?? '-' }}</span>
@@ -72,7 +72,7 @@
       </div>
       <div class="system-summary-card" style="background: #f6f8fa; border-radius: 10px; box-shadow: 0 2px 8px #e0e7ff; padding: 20px 32px; font-size: 1.1em; font-weight: 600; margin-top: 12px;">
         <div><b>Total Companies:</b> {{ companies.length }}</div>
-        <div><b>Company Balance:</b> {{ formatCurrency(selectedCompanyDetails()?.mainAccount?.currentBalance ?? systemBalance) }}</div>
+        <div><b>System Total Balance:</b> {{ formatCurrency(systemBalance) }}</div>
       </div>
     } @else {
       <div class="company-card" style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #e0e7ff; padding: 48px 48px; text-align: center; color: #888; font-size: 1.2em; margin: 0 auto;">

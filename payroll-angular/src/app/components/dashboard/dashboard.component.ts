@@ -34,7 +34,8 @@ export class DashboardComponent implements OnInit {
   userContext = inject(UserContextService);
   companySelection = inject(CompanySelectionService);
 
-  companies = computed(() => this.userContext.companyNames());
+  // Use companies from CompanySelectionService (loaded from API), not from user context
+  companies = computed(() => this.companySelection.companies());
   isAdminOrEmployer = computed(() => this.userContext.isAdmin() || this.userContext.isEmployer());
   isEmployee = computed(() => this.userContext.isEmployee());
   isAdmin = computed(() => this.userContext.isAdmin());
@@ -50,6 +51,7 @@ export class DashboardComponent implements OnInit {
     this.checkAuth();
     if (this.authService?.isAuthenticated() && window.localStorage.getItem('userProfile')) {
       this.initializeCompanySelection();
+      this.loadAllCompaniesForNavbar(); // Load companies immediately for navbar balance
       this.loadInitialData();
       this.restoreRouteState();
     }
@@ -130,6 +132,24 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  loadAllCompaniesForNavbar() {
+    // Always load companies for navbar balance and dropdown (regardless of selected company)
+    this.companyService?.getAllCompanies().subscribe({
+      next: (companies: any[]) => {
+        console.log('📦 Raw companies received:', companies);
+        if (!Array.isArray(companies)) {
+          console.warn('⚠️ Companies is not an array:', companies);
+          companies = [];
+        }
+        this.companySelection?.companies.set(companies);
+        console.log('✅ All companies loaded for navbar balance:', companies.length, 'companies:', companies);
+      },
+      error: (error: any) => {
+        console.error('Failed to load companies:', error);
+      }
+    });
+  }
+
   loadInitialData() {
     this.loading?.set(true);
     const companyId = this.companySelection?.selectedCompanyId() || this.userContext?.companyId() || '';
@@ -156,15 +176,19 @@ export class DashboardComponent implements OnInit {
     const role = this.userContext?.userRole();
     switch(role) {
       case 'ADMIN':
-        this.companyService?.getCompany(id).subscribe({
-          next: (company: any) => {
-          },
-          error: (error: any) => console.error('Failed to load balance:', error)
-        });
+        // Already loaded in loadAllCompaniesForNavbar()
         break;
       case 'EMPLOYER':
+        // Ensure company is in the companies list with fresh data
         this.companyService?.getCompany(id).subscribe({
           next: (company: any) => {
+            const existingCompanies = this.companySelection?.companies() || [];
+            const updatedCompanies = existingCompanies.map((c: any) => c.id === id ? company : c);
+            if (!updatedCompanies.find((c: any) => c.id === id)) {
+              updatedCompanies.push(company);
+            }
+            this.companySelection?.companies.set(updatedCompanies);
+            console.log('✅ Company balance loaded for navbar');
           },
           error: (error: any) => {
             console.error('Failed to load company:', error);
@@ -235,6 +259,7 @@ export class DashboardComponent implements OnInit {
       return this.companySelection.systemBalance();
     }
     const company = this.companySelection.companies().find((c: any) => c.id === selectedId);
+    console.log('💰 Looking for company:', selectedId, 'found:', company);
     return company?.mainAccount?.currentBalance ?? this.companySelection.systemBalance();
   }
 }

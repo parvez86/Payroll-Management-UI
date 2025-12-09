@@ -20,6 +20,7 @@ export class TransactionService {
     debitAccountId?: string;
     creditAccountId?: string;
     batchId?: string;
+    companyId?: string;
     page?: number;
     size?: number;
     sort?: string;
@@ -35,6 +36,7 @@ export class TransactionService {
     if (filters.debitAccountId) params.debitAccountId = filters.debitAccountId;
     if (filters.creditAccountId) params.creditAccountId = filters.creditAccountId;
     if (filters.batchId) params.batchId = filters.batchId;
+    if (filters.companyId) params.companyId = filters.companyId;
     if (filters.page !== undefined) params.page = filters.page;
     if (filters.size !== undefined) params.size = filters.size;
     if (filters.sort) params.sort = filters.sort;
