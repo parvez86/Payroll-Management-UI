@@ -1,5 +1,6 @@
-import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { AuthService } from './auth.service';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
@@ -17,8 +18,12 @@ import type {
   providedIn: 'root'
 })
 export class PayrollService {
-  private http = inject(HttpClient);
   private apiUrl = environment.apiUrl;
+
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {}
 
   calculateSalaries(grade6Basic: number): Observable<PayrollCalculationResponse> {
     return this.http.post<any>(
@@ -142,11 +147,10 @@ export class PayrollService {
         // Store batch info in localStorage for UI logic (matching React pattern)
         if (response && response.id) {
           if (typeof window !== 'undefined' && window.localStorage) {
-            // Only set if authenticated
-            const authService = (window as any).ng && (window as any).ng.getInjector && (window as any).ng.getInjector().get && (window as any).ng.getInjector().get('AuthService');
-            if (authService && typeof authService.isAuthenticated === 'function' && authService.isAuthenticated()) {
+            if (this.authService.isAuthenticated()) {
               localStorage.setItem('payrollBatchId', response.id);
-              localStorage.setItem('payrollBatchStatus', response.payrollStatus || response.status);
+              const batchStatus = response.payrollStatus || response.status || 'UNKNOWN';
+              localStorage.setItem('payrollBatchStatus', batchStatus);
               localStorage.setItem('payrollBatchInfo', JSON.stringify(response));
             }
           }
@@ -178,5 +182,24 @@ export class PayrollService {
         return of({ success: false, message: 'Payroll process failed', totalAmount: 0 });
       })
     );
+  }
+
+  /**
+   * Get products with pagination and multi-field sorting (Spring format)
+   */
+  getProducts(
+    page: number,
+    size: number,
+    sorts: Array<{ field: string; direction: string }>
+  ): Observable<any> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
+
+    sorts.forEach(sort => {
+      params = params.append('sort', `${sort.field},${sort.direction}`);
+    });
+
+    return this.http.get<any>(this.apiUrl, { params });
   }
 }

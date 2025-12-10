@@ -13,14 +13,8 @@
 ### Critical Business Rules (FIXED - DO NOT MODIFY)
 ```typescript
 // Salary formula (payroll-frontend/src/utils/salaryCalculator.ts)
-basic = baseSalaryGrade6 + (6 - employeeGrade) × 5000
-hra = basic × 0.20
-medical = basic × 0.15
-gross = basic + hra + medical
 
 // Employee constraints (payroll-frontend/src/config/index.ts)
-Total: 10 employees | Distribution: Grade 1(1), 2(1), 3(2), 4(2), 5(2), 6(2)
-ID Format: 4-digit unique | Bank Account: Auto-created by backend
 ```
 
 ## 🛠️ Development Workflow
@@ -57,6 +51,58 @@ USE_MOCK_API: true   // Mock data (src/mocks/mockAPI.ts, 10 predefined employees
 **Usage**: `const { user, login } = useAuth();`
 
 ### Angular Modern Patterns (Angular 21, enforced in `payroll-angular/AGENTS.md`)
+
+# Payroll Management System – AI Coding Agent Guide
+
+## Overview
+Multi-frontend monorepo for payroll management with strict grade-based salary rules and role-based access control (RBAC). React (primary) and Angular (migration) frontends share business logic and API contracts. Backend is Spring Boot (external repo).
+
+## Architecture & Data Flow
+- **React** (`payroll-frontend/`): Context API for state, no Redux. Key files: `src/components/`, `src/services/api.ts`, `src/utils/salaryCalculator.ts`.
+- **Angular** (`payroll-angular/`): Signals for state, enforced modern Angular 21 patterns (see `AGENTS.md`). Key files: `src/app/components/`, `src/app/services/`, `src/app/real-backend.component.ts`.
+- **RBAC**: Centralized in Angular via `UserContextService` (see code in this file). React uses context-based role checks.
+- **API**: All endpoints return `{ success, message, data }`. JWT required except `/auth/login`. See `docs/api-documentation.md`.
+
+## Critical Business Rules (DO NOT CHANGE)
+- Salary: Use only `salaryCalculator.ts` (React) or `salary-calculator.ts` (Angular)
+- Employees: Exactly 10, fixed grade distribution (see config/index.ts)
+- Employee ID: 4-digit unique, validated by `validateEmployeeId()`
+- Grade validation: Use `validateGradeDistribution()` before create/update
+
+## Developer Workflow
+- **React**: `cd payroll-frontend; npm install; npm run dev` (http://localhost:5173)
+- **Angular**: `cd payroll-angular; npm install; npm start` (http://localhost:4200)
+- **API mode (React only)**: Toggle `USE_MOCK_API` in `src/config/index.ts` for mock vs real backend
+- **Build**: `npm run build` in either frontend
+- **Testing**: No automated tests; use `src/utils/integrationTester.ts` for manual API checks
+
+## Project Conventions & Patterns
+- **React**: Context API for auth/state, Axios for HTTP, CSS Modules, no Redux
+- **Angular**: Standalone components (never set `standalone: true`), signals for state, use `update()`/`set()` (never `mutate()`), no `ngClass`/`ngStyle`, use native control flow
+- **RBAC**: Always filter employee lists by role/grade (see `UserContextService` or context)
+- **API**: Always check `success` before using `data`. JWT in `localStorage` as `accessToken`
+- **Terminal**: Use PowerShell syntax (`;` for chaining, never `&&`)
+
+## Integration & Cross-Component
+- **API Layer**: React: `src/services/api.ts` (dynamic mock/real). Angular: `auth.interceptor.ts` for JWT.
+- **Salary/Grade**: Never duplicate logic; always import from shared utils
+- **Docs**: See `docs/` and `payroll-frontend/docs/` for business rules, API, and migration status
+
+## Common Pitfalls
+1. Never modify salary calculation logic directly
+2. Always validate grade distribution and employee ID
+3. Always use JWT for protected endpoints
+4. React: Check `USE_MOCK_API` before debugging API issues
+5. Angular: Never set `standalone: true`; use signals properly
+6. Always check API `success` field
+
+## References
+- `payroll-frontend/src/utils/salaryCalculator.ts`, `payroll-frontend/src/config/index.ts`
+- `payroll-angular/src/app/services/`, `payroll-angular/AGENTS.md`
+- `docs/api-documentation.md`, `docs/IMPLEMENTATION_STATUS.md`
+
+---
+For migration or architecture questions, see `docs/angular-migration/` and `payroll-angular/AGENTS.md`.
 
 ### RBAC Implementation (Angular)
 **`UserContextService`** provides centralized role-based access control:

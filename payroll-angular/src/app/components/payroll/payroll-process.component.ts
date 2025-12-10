@@ -379,15 +379,6 @@ export class PayrollProcessComponent implements OnInit {
         this.payrollService.createPayrollBatch(payload).subscribe({
           next: (batch: any) => {
             console.log('✅ Batch created successfully:', batch);
-            this.loading.set(false);
-            this.message.set(`✅ Payroll batch created. Batch ID: ${batch.id}`);
-
-            // Update local state with new batch
-            this.batchData.set(batch);
-            this.batchId.set(batch.id);
-            this.batchName.set(batch.name || 'N/A');
-            this.loading.set(false);
-            this.message.set(`✅ Payroll batch created. Batch ID: ${batch.id}`);
             // Update local state with new batch
             this.batchData.set(batch);
             this.batchId.set(batch.id);
@@ -399,27 +390,29 @@ export class PayrollProcessComponent implements OnInit {
             this.loadCompany(selectedCompanyId);
             // Load batch items
             let employeeId: string | undefined = undefined;
-                const userStr = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('userProfile') : null;
-                if (userStr) {
-                  try {
-                    const user = JSON.parse(userStr);
-                    if (user && user.user && user.user.role === 'EMPLOYEE') {
-                      employeeId = user.user.id;
-                    }
-                  } catch {}
+            const userStr = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('userProfile') : null;
+            if (userStr) {
+              try {
+                const user = JSON.parse(userStr);
+                if (user && user.user && user.user.role === 'EMPLOYEE') {
+                  employeeId = user.user.id;
                 }
-                this.payrollService.getPayrollItems(batch.id, employeeId).subscribe({
-                  next: (items: any[]) => {
-                    this.batchItems.set(items || []);
-                    // After batch creation, reload page state
-                    this.currentPage.set(0);
-                  },
-                  error: (err: any) => {
-                    this.batchItems.set([]);
-                    this.currentPage.set(0);
-                  }
-                });
-            this.loading.set(false);
+              } catch {}
+            }
+            this.payrollService.getPayrollItems(batch.id, employeeId).subscribe({
+              next: (items: any[]) => {
+                this.batchItems.set(items || []);
+                this.currentPage.set(0);
+                this.loading.set(false);
+                this.message.set(`✅ Payroll batch created. Batch ID: ${batch.id}`);
+              },
+              error: (err: any) => {
+                this.batchItems.set([]);
+                this.currentPage.set(0);
+                this.loading.set(false);
+                this.message.set(`✅ Payroll batch created. Batch ID: ${batch.id}`);
+              }
+            });
           }
         });
       },

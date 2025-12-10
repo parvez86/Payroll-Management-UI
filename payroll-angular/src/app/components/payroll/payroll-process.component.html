@@ -221,7 +221,7 @@
         </div>
       
         <div class="pagination-summary">
-          Page {{ currentPage() + 1 }} of {{ totalPages() }} ({{ employeesWithSalaries().length }} total)
+          Page {{ currentPage() + 1 }} of {{ totalPages() }} ({{ (employeesWithSalaries() || []).length }} total)
         </div>
     </div>
   </div>
@@ -238,8 +238,8 @@
           <div class="insufficient-funds-info">
             <div class="balance-info">
               <p><strong>Current Balance:</strong> <span class="current-balance">{{ formatCurrency(companyBalance()) }}</span></p>
-              <p><strong>Total Payroll:</strong> <span class="required-amount">{{ formatCurrency(batchData()?.totalAmount?.amount || 0) }}</span></p>
-              <p><strong>Already Paid:</strong> <span class="paid-amount">{{ formatCurrency(batchData()?.executedAmount?.amount || 0) }}</span></p>
+              <p><strong>Total Payroll:</strong> <span class="required-amount">{{ formatCurrency((batchData()?.totalAmount?.amount) ?? 0) }}</span></p>
+              <p><strong>Already Paid:</strong> <span class="paid-amount">{{ formatCurrency((batchData()?.executedAmount?.amount) ?? 0) }}</span></p>
               <p><strong>Minimum Top-up:</strong> <span class="minimum-topup">{{ formatCurrency(paymentStatus().requiredTopUp) }}</span></p>
             </div>
             

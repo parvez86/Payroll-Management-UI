@@ -224,29 +224,7 @@ export class TransactionListComponent implements OnInit {
   }
   
   private filterTransactionsByRole(transactions: any[], role: string | null): any[] {
-    if (role === 'ADMIN') {
-      return transactions; // Admin sees all
-    }
-    
-    if (role === 'EMPLOYER') {
-      const companyId = this.userContext.companyId();
-      const companyIdStr = typeof companyId === 'string' ? companyId : '';
-      if (!companyIdStr) return transactions;
-      // Filter by company (assuming transactions have company info)
-      // Note: This is a fallback - backend should handle this
-      return transactions.filter(tx => 
-        tx.companyId === companyIdStr ||
-        tx.debitAccountId?.includes(companyIdStr) ||
-        tx.creditAccountId?.includes(companyIdStr)
-      );
-    }
-    
-    if (role === 'EMPLOYEE') {
-      // Filter by account IDs already loaded in getEmployeeAccountIds
-      // This is handled by the accountIds filter above
-      return transactions;
-    }
-    
+    // All roles: show all transactions from backend response
     return transactions;
   }
 

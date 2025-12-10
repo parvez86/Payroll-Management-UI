@@ -26,8 +26,12 @@ export class TransactionService {
     sort?: string;
     direction?: string;
   }): Observable<any> {
-    const params: any = {};
     
+    function isValidUUID(uuid: string): boolean {
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
+    }
+
+    const params: any = {};
     if (filters.type) params.type = filters.type;
     if (filters.category) params.category = filters.category;
     if (filters.status) params.status = filters.status;
@@ -35,7 +39,7 @@ export class TransactionService {
     if (filters.toDate) params.toDate = filters.toDate;
     if (filters.debitAccountId) params.debitAccountId = filters.debitAccountId;
     if (filters.creditAccountId) params.creditAccountId = filters.creditAccountId;
-    if (filters.batchId) params.batchId = filters.batchId;
+    if (filters.batchId && isValidUUID(filters.batchId)) params.payrollBatchId = filters.batchId;
     if (filters.companyId) params.companyId = filters.companyId;
     if (filters.page !== undefined) params.page = filters.page;
     if (filters.size !== undefined) params.size = filters.size;
