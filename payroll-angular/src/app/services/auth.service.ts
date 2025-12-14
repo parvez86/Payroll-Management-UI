@@ -136,18 +136,23 @@ export class AuthService {
   logout(): Observable<void> {
     const accessToken = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('accessToken') : null;
     const refreshToken = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('refreshToken') : null;
-    const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
     const body = {
       refreshToken: refreshToken ? `Bearer ${refreshToken}` : '',
       logoutFromAllDevices: false
     };
-    return this.http.post<void>(`${this.apiUrl}/auth/logout`, body, { headers }).pipe(
-      map(() => {
-        console.log('✅ Logout API call successful');
+    return this.http.post<any>(`${this.apiUrl}/auth/logout`, body, { headers }).pipe(
+      map((response: any) => {
+        if (response && typeof response === 'object') {
+          if (response.accessToken) localStorage.removeItem('accessToken');
+          if (response.refreshToken) localStorage.removeItem('refreshToken');
+        }
         this.clearAuthData();
       }),
       catchError((error) => {
-        console.warn('⚠️ Logout API call failed, but clearing local data anyway:', error);
         this.clearAuthData();
         return of(undefined);
       })
@@ -232,5 +237,29 @@ export class AuthService {
       return window.localStorage.getItem('accessToken');
     }
     return null;
+  }
+
+  refreshToken(): Observable<LoginResponse | null> {
+    const refreshToken = typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('refreshToken') : null;
+    const body = { refreshToken: refreshToken ? `Bearer ${refreshToken}` : '' };
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    return this.http.post<any>(`${this.apiUrl}/auth/refresh`, body, { headers }).pipe(
+      map((response: any) => {
+        if (response && response.accessToken) {
+          localStorage.setItem('accessToken', response.accessToken);
+        }
+        if (response && response.refreshToken) {
+          localStorage.setItem('refreshToken', response.refreshToken);
+        }
+        if (response && response.expiresIn) {
+          localStorage.setItem('tokenExpiration', response.expiresIn.toString());
+        }
+        return response;
+      }),
+      catchError((error) => {
+        this.clearAuthData();
+        return of(null);
+      })
+    );
   }
 }

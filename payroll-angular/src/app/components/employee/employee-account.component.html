@@ -1,0 +1,30 @@
+<div class="employee-account-container">
+  <app-loading-spinner [loading]="loading()" message="Loading account info..." />
+  <ng-container *ngIf="!loading() && account() as acc">
+    <div class="employee-account-card">
+      <div class="account-header">
+        <span class="account-avatar">{{ acc.accountName.charAt(0) || '?' }}</span>
+        <div>
+          <div class="account-name">{{ acc.accountName }}</div>
+          <span class="status-badge" [ngStyle]="{color: acc.status === 'ACTIVE' ? '#28a745' : '#dc3545', 'font-weight': 'bold'}">{{ acc.status }}</span>
+        </div>
+      </div>
+      <div class="account-balance">
+        <b>Balance: </b> <span [ngStyle]="{color: acc.currentBalance >= 0 ? '#28a745' : '#dc3545', 'font-weight': 'bold'}">BDT {{ acc.currentBalance }}</span>
+      </div>
+      <div class="account-info-section">
+        <div class="account-info-title">
+          <span>💳</span> Account Information
+        </div>
+        <div class="account-info-grid">
+          <div><b>Account #:</b> <span class="mono">{{ acc.accountNumber }}</span></div>
+          <div><b>Type:</b> {{ acc.accountType }}</div>
+          <div><b>Branch:</b> {{ acc.branchName }}</div>
+          <div *ngIf="acc.overdraftLimit > 0"><b>Overdraft Limit:</b> {{ acc.overdraftLimit }}</div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+        <div *ngIf="!loading() && error()" class="error-message">{{ error() }}</div>
+  <div *ngIf="!loading() && error()" class="error-message">{{ error() }}</div>
+</div>

@@ -28,6 +28,8 @@ interface Transaction {
   referenceId: string;
   description: string;
   processedAt: string;
+  companyId?: string;
+  companyName?: string;
 }
 
 @Component({

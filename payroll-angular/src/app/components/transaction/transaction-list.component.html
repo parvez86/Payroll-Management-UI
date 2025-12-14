@@ -124,12 +124,10 @@
             <th class="table-cell clickable" (click)="handleSort('type')">
               Type {{ getSortIcon('type') }}
             </th>
-            <th class="table-cell">Batch ID</th>
-            <th class="table-cell">Batch Item ID</th>
-            <th class="table-cell">Debit Account ID</th>
-            <th class="table-cell">From Account</th>
-            <th class="table-cell">Credit Account ID</th>
-            <th class="table-cell">To Account</th>
+            <th class="table-cell">Company</th>
+            <th class="table-cell">Batch</th>
+            <th class="table-cell">Sender</th>
+            <th class="table-cell">Receiver</th>
             <th class="table-cell text-right clickable" (click)="handleSort('amount')">
               Amount {{ getSortIcon('amount') }}
             </th>
@@ -154,22 +152,28 @@
               <div class="category-tag">{{ tx.category }}</div>
             </td>
             <td class="table-cell">
-              <div class="id-cell">{{ tx.payrollBatchId || 'N/A' }}</div>
+              <div class="company-info">
+                <span class="company-name">{{ tx.companyName || 'N/A' }}</span>
+                <span class="company-id">ID: {{ tx.companyId || 'N/A' }}</span>
+              </div>
             </td>
             <td class="table-cell">
-              <div class="id-cell">{{ tx.payrollItemId || 'N/A' }}</div>
+              <div class="batch-info">
+                <span class="batch-id">Batch: {{ tx.payrollBatchId || 'N/A' }}</span>
+                <span class="batch-item-id">Item: {{ tx.id }}</span>
+              </div>
             </td>
             <td class="table-cell">
-              <div class="id-cell">{{ tx.debitAccountId }}</div>
+              <div class="sender-info">
+                <span class="account-name">{{ tx.debitAccountName }}</span>
+                <span class="account-id">ID: {{ tx.debitAccountId }}</span>
+              </div>
             </td>
             <td class="table-cell">
-              <div class="account-name">{{ tx.debitAccountName }}</div>
-            </td>
-            <td class="table-cell">
-              <div class="id-cell">{{ tx.creditAccountId }}</div>
-            </td>
-            <td class="table-cell">
-              <div class="account-name">{{ tx.creditAccountName }}</div>
+              <div class="receiver-info">
+                <span class="account-name">{{ tx.creditAccountName }}</span>
+                <span class="account-id">ID: {{ tx.creditAccountId }}</span>
+              </div>
             </td>
             <td class="table-cell text-right">
               <div class="amount">{{ formatCurrency(tx.amount.amount) }}</div>

@@ -1,0 +1,80 @@
+.employee-account-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 32px;
+}
+.employee-account-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px #e0e7ff;
+  min-width: 340px;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 32px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.account-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+.account-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #e3f0ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2em;
+  font-weight: 700;
+  color: #1976d2;
+}
+.account-name {
+  font-size: 1.3em;
+  font-weight: 700;
+}
+.status-badge {
+  font-size: 1em;
+  margin-left: 8px;
+  font-weight: bold;
+}
+.account-balance {
+  font-size: 1.1em;
+  margin-bottom: 8px;
+}
+.account-info-section {
+  background: #f6f8fa;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px #e0e7ff;
+  padding: 18px 24px;
+  margin-top: 12px;
+  width: 80%;
+}
+.account-info-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #1976d2;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.account-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 32px;
+  font-size: 1em;
+}
+.mono {
+  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+}
+.error-message {
+  color: #dc3545;
+  font-weight: 600;
+  margin-top: 24px;
+}

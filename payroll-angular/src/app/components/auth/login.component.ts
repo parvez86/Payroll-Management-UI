@@ -42,8 +42,14 @@ export class LoginComponent {
         this.message.set(`✅ Welcome, ${response.user.username}!`);
         this.loading.set(false);
         
-        // Navigate to dashboard
-        this.router.navigate(['/dashboard']);
+        // Check for redirect param
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirect = urlParams.get('redirect');
+        if (redirect) {
+          this.router.navigateByUrl(redirect);
+        } else {
+          this.router.navigate(['/dashboard']);
+        }
       },
       error: (error) => {
         console.error('Login failed:', error);

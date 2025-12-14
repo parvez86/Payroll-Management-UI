@@ -46,6 +46,13 @@ export class DashboardComponent implements OnInit {
     return 'Company Balance';
   });
   balanceTooltip = computed(() => this.userContext.getBalanceTooltip());
+  employeeBalance: Signal<number> = computed(() => {
+    const profile = this.userProfile();
+    if (profile && profile.account && typeof profile.account.currentBalance === 'number') {
+      return profile.account.currentBalance;
+    }
+    return 0;
+  });
 
   ngOnInit() {
     this.checkAuth();
@@ -217,25 +224,33 @@ export class DashboardComponent implements OnInit {
   }
 
   logout() {
-    // Clear all signals/context
-    this.userContext?.clearProfile();
-    this.userProfile?.set(null);
-    this.companySelection?.setSelectedCompany('');
-    // Remove all user-related data from localStorage/sessionStorage
-    if (typeof window !== 'undefined') {
-      const keysToRemove = [
-        'userProfile', 'accessToken', 'refreshToken', 'companyId', 'companyIds', 'selectedCompanyId',
-        'userRole', 'isAuthenticated', 'user', 'tokenExpiration', 'lastRoute', 'userAccount', 'mockUser'
-      ];
-      keysToRemove.forEach(key => window.localStorage.removeItem(key));
-    }
-    this.router?.navigate(['/login']);
+    this.loading.set(true);
+    this.authService.logout().subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.router.navigate(['/login']);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.router.navigate(['/login']);
+      }
+    });
   }
 
   clearMessage() {
     this.message?.set('');
   }
 
+  getHeaderBalanceLabel(): string {
+    if (this.isEmployee()) return 'Employee Balance';
+    if (this.companySelection?.selectedCompanyId()) return 'Company Balance';
+    return 'System Balance';
+  }
+
+  getHeaderBalance(): string {
+    if (this.isEmployee()) return this.formatCurrency(this.employeeBalance()).toLocaleString();
+    return this.formatCurrency(this.getCurrentBalance());
+  }
   formatCurrency(amount: number): string {
     return formatCurrency(amount);
   }

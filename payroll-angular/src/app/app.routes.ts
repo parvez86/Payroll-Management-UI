@@ -55,6 +55,10 @@ export const routes: Routes = [
       {
         path: 'transactions',
         component: TransactionListComponent
+      },
+      {
+        path: 'my-account',
+        loadComponent: () => import('./components/employee/employee-account.component').then(m => m.EmployeeAccountComponent)
       }
     ]
   },
