@@ -1,49 +1,79 @@
-# Payroll Management System - Technical Assignment
+# Payroll Management System - Documentation Index
 
-## 📋 Assignment Overview
+## 📚 Documentation Overview
 
-This project implements a comprehensive web application for calculating and paying employee salaries based on a grade-based system.
+Welcome to the Payroll Management System documentation. This directory contains all technical documentation for the React frontend application.
 
 ---
 
-## 🎯 Assignment Requirements
+## 📖 Available Documents
 
-### **Business Requirements**
+### **1. [API Documentation](api-documentation.md)**
+Complete REST API endpoint documentation including:
+- Authentication endpoints (`/auth/login`, `/auth/me`)
+- Employee CRUD operations
+- Payroll processing endpoints
+- Company account management
+- Transaction history endpoints
 
-#### **Employee Structure**
-- **Total Employees**: 10
-- **Grade Distribution**: 
-  - Grade 1 (Highest): 1 employee
-  - Grade 2: 1 employee  
-  - Grade 3: 2 employees
-  - Grade 4: 2 employees
-  - Grade 5: 2 employees
-  - Grade 6 (Lowest): 2 employees
+**Use this when**: Integrating with the backend API or debugging API calls.
 
-#### **Employee Information**
-Each employee must have:
-- Employee ID (4 digits, unique)
-- Name
-- Grade/Rank (1-6)
-- Address
-- Mobile number
-- Bank Account details
+---
 
-#### **Bank Account Structure**
-- Account Type (Savings/Current)
-- Account Name
-- Account Number
-- Current Balance
-- Bank Name
-- Branch Name
+### **2. [API Reference](api-reference.md)**
+Quick reference guide for all available API endpoints with examples and response formats.
 
-#### **Salary Components**
-- **Basic Salary**: Base amount
-- **House Rent**: 20% of basic salary
-- **Medical Allowance**: 15% of basic salary
-- **Gross Salary**: Basic + House Rent + Medical
+**Use this when**: You need a quick lookup of endpoint URLs and parameters.
 
-#### **Salary Calculation Formula**
+---
+
+### **3. [Implementation Status](IMPLEMENTATION_STATUS.md)**
+Detailed feature tracking and completion status for all components:
+- Employee management (✅ 100% complete)
+- Salary calculation (✅ 100% complete)
+- Payroll processing (✅ 100% complete)
+- Authentication (✅ 100% complete)
+- RBAC and company management (✅ 100% complete)
+
+**Use this when**: Checking feature completion or understanding what's been implemented.
+
+---
+
+## 🏗️ Project Architecture
+
+### **Directory Structure**
+```
+Payroll-Management-UI/          ← React Root
+├── src/
+│   ├── components/            → React UI components
+│   │   ├── auth/              → Login & authentication
+│   │   ├── employee/          → Employee CRUD operations
+│   │   ├── payroll/           → Salary calculation & transfer
+│   │   ├── company/           → Company account management
+│   │   └── shared/            → Reusable UI components
+│   ├── contexts/              → React Context API providers
+│   ├── services/              → API layer & HTTP client
+│   ├── utils/                 → Helper functions & validators
+│   ├── types/                 → TypeScript interfaces
+│   ├── mocks/                 → Mock API data
+│   └── config/                → Business rules & constants
+├── public/                    → Static assets
+├── docs/                      → Documentation
+├── package.json               → Dependencies
+├── vite.config.ts             → Build configuration
+└── index.html                 → Entry point
+```
+
+---
+
+## 🎯 Business Requirements
+
+### **Employee Structure**
+- **Total**: 10 employees
+- **Grade Distribution**: 1(1), 2(1), 3(2), 4(2), 5(2), 6(2)
+- **Grade Range**: 1 (highest) to 6 (lowest)
+
+### **Salary Calculation Formula**
 ```
 Grade 6 Basic = Input value (lowest grade)
 Grade 5 Basic = Grade 6 Basic + 5,000 BDT
@@ -51,252 +81,130 @@ Grade 4 Basic = Grade 5 Basic + 5,000 BDT
 Grade 3 Basic = Grade 4 Basic + 5,000 BDT
 Grade 2 Basic = Grade 3 Basic + 5,000 BDT
 Grade 1 Basic = Grade 2 Basic + 5,000 BDT
+
+House Rent = 20% of Basic
+Medical = 15% of Basic
+Gross = Basic + House Rent + Medical
 ```
 
-#### **Company Account**
-- Main bank account with initial balance (input)
-- Salary transfers from company account to employee accounts
-- Top-up functionality when account runs out of money
+### **Employee Constraints**
+- Employee ID: 4-digit unique identifier
+- All fields required: name, grade, address, mobile
+- Bank account auto-created by backend
 
 ---
 
-## 🛠️ Technical Requirements
+## 🚀 Quick Start
 
-### **Required Tech Stack**
-1. **Frontend**: React
-2. **Backend**: Spring Boot (REST API)
-3. **Authentication**: JWT
-
-### **Functional Requirements**
-1. ✅ **CRUD Operations** for all entities
-2. ✅ **Employee ID Validation** (4 digits, unique)
-3. ✅ **Entity Relationships** maintenance
-4. ✅ **Input Data Validation**
-5. ✅ **Salary Calculation** for each employee
-6. ✅ **Salary Transfer** from company to employee accounts
-7. ✅ **Salary Sheet Display** (name, rank, salary)
-8. ✅ **Summary Display** (total paid, remaining balance)
-9. ✅ **JWT Authentication** (Login/Logout)
-
----
-
-## 🚀 What We've Developed
-
-### **✅ Fully Implemented Features**
-
-#### **1. Complete UI/UX System**
-- **Login Page**: Professional gradient design with JWT simulation
-- **Dashboard**: Employee management with Excel-style tables
-- **Salary Calculator**: Automatic calculation based on grade
-- **Payroll Processing**: Transfer system with insufficient funds handling
-- **Salary Sheet**: Professional display with status indicators
-- **Company Account**: Balance management and top-up functionality
-
-#### **2. Grade-Based Salary System**
-```javascript
-const calculateSalary = (grade, baseSalaryGrade6) => {
-  const basic = baseSalaryGrade6 + (6 - grade) * 5000;
-  const hra = basic * 0.20;
-  const medical = basic * 0.15;
-  const gross = basic + hra + medical;
-  return { basic, hra, medical, gross };
-};
-```
-
-#### **3. Employee Management**
-- **CRUD Operations**: Complete Create, Read, Update, Delete
-- **Form Validation**: Real-time validation with error messages
-- **Sorting**: Sortable columns (ID, Grade, Balance)
-- **Grade Distribution**: Enforced limits per grade level
-
-#### **4. Bank Account Integration**
-- **Account Types**: Savings/Current selection
-- **Balance Management**: Real-time balance updates
-- **Transfer Logic**: Automatic balance deduction/credit
-
-#### **5. Company Account Features**
-- **Balance Tracking**: Real-time company account balance
-- **Transfer Processing**: Batch salary transfers
-- **Insufficient Funds**: Modal prompt for account top-up
-- **Transaction History**: Visual feedback for all operations
-
-#### **6. Professional UI Design**
-- **Excel-Style Tables**: Professional data presentation
-- **Responsive Design**: Mobile and desktop optimized
-- **Toast Notifications**: Real-time user feedback
-- **Gradient Theme**: Modern professional appearance
-- **Form Sectioning**: Organized input fields
-
----
-
-## 📊 Implementation Status
-
-### **✅ COMPLETED (85%)**
-
-| Feature | Status | Description |
-|---------|--------|-------------|
-| **Grade System** | ✅ Complete | 6 grades (1=highest, 6=lowest) |
-| **Employee Distribution** | ✅ Complete | Exact 10 employees (1,1,2,2,2,2) |
-| **Salary Calculation** | ✅ Complete | Grade 6 base + 5000 per grade |
-| **CRUD Operations** | ✅ Complete | Full employee management |
-| **Transfer System** | ✅ Complete | Company to employee transfers |
-| **Insufficient Funds** | ✅ Complete | Top-up modal functionality |
-| **Salary Sheet** | ✅ Complete | Professional display |
-| **JWT Authentication** | ✅ Complete | Login/logout simulation |
-| **UI/UX Design** | ✅ Complete | Professional Excel-style theme |
-
-### **⚠️ NEEDS REFINEMENT (10%)**
-
-| Feature | Status | Required Action |
-|---------|--------|----------------|
-| **Employee ID Validation** | ⚠️ Partial | Add 4-digit regex + uniqueness check |
-| **Grade Limits** | ⚠️ Partial | Enforce distribution limits (1,1,2,2,2,2) |
-
-### **❌ MISSING (5%)**
-
-| Feature | Status | Description |
-|---------|--------|-------------|
-| **Backend Integration** | 🔄 Ready | Spring Boot service completed - integration pending |
-| **Database Integration** | 🔄 Ready | Backend has H2/MySQL with JPA entities |
-
----
-
-## 🏗️ Project Structure
-
-```
-PayrollManagementSystem/
-├── payroll-ui/             → React Frontend (This Repository)
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── auth/           → Login/Logout with JWT
-│   │   │   ├── employee/       → Employee CRUD Operations  
-│   │   │   ├── payroll/        → Salary calculation & transfer
-│   │   │   ├── company/        → Company account management
-│   │   │   └── shared/         → Reusable UI components
-│   │   ├── services/           → API integration layer
-│   │   ├── utils/              → Salary calculation helpers
-│   │   ├── contexts/           → React Context providers
-│   │   └── App.tsx             → Main router with protected routes
-│   ├── docs/                   → Frontend documentation
-│   └── package.json            → Frontend dependencies
-├── payroll-backend/        → Spring Boot API (Separate Repository)
-│   ├── src/main/java/         → Spring Boot application
-│   ├── src/main/resources/    → Configuration & database
-│   └── pom.xml               → Backend dependencies
-├── docs/                   → Integration & API documentation
-└── README.md              → Project overview
-```
-
----
-
-## 🚦 Quick Start Guide
-
-### **Prerequisites**
-- Node.js 18+ 
-- npm or yarn
-- Java 11+ (for backend)
-- Maven 3.6+ (for backend)
-
-### **Frontend Installation**
-```bash
-cd payroll-ui
+### **Start Development Server**
+```powershell
 npm install
 npm run dev
+# Frontend runs at http://localhost:5173
 ```
 
-### **Backend Setup** 
-```bash
-cd payroll-backend
-mvn clean install
-mvn spring-boot:run
+### **Build for Production**
+```powershell
+npm run build
+# Output in dist/ folder
 ```
 
-### **Full Stack Development**
-```bash
-# Terminal 1: Start backend
-cd payroll-backend && mvn spring-boot:run
-
-# Terminal 2: Start frontend  
-cd payroll-ui && npm run dev
+### **Code Quality Checks**
+```powershell
+npm run lint
 ```
 
-### **Default Login**
-- **Username**: admin
-- **Password**: password
+---
 
-### **Usage Flow**
-1. **Login** → Enter any credentials (simulated auth)
-2. **Employees** → View/Add/Edit/Delete employees
-3. **Payroll** → Calculate salaries and process transfers
-4. **Salary Sheet** → View detailed salary breakdown
-5. **Company Account** → Monitor balance and top-up if needed
+## 🔌 API Integration
+
+### **Base URL**
+```
+http://localhost:20001/pms/api/v1
+```
+
+### **Authentication**
+- All endpoints except `/auth/login` require JWT Bearer token
+- Token stored in `localStorage` as `accessToken`
+- Automatically injected via HTTP interceptor
+
+### **Response Format**
+```json
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": { }
+}
+```
+
+**Important**: Always check the `success` field before accessing `data`.
 
 ---
 
-## 🎨 Key Features Showcase
+## 📁 Key Files
 
-### **1. Professional Login**
-- Full-screen gradient background
-- Centered modal with shadow effects
-- JWT simulation with success messages
-
-### **2. Excel-Style Data Tables**
-- Sortable columns with visual indicators
-- Professional borders and spacing
-- Hover effects and status badges
-
-### **3. Intelligent Transfer System**
-- Automatic salary calculations
-- Balance validation before transfers
-- Insufficient funds handling with top-up modal
-
-### **4. Responsive Toast Notifications**
-- Mobile: Top-center positioning
-- Desktop: Top-right positioning
-- Auto-dismiss after 5 seconds
-- Manual close option
-
-### **5. Grade-Based Validation**
-- Real-time form validation
-- Grade distribution enforcement
-- Unique 4-digit employee ID system
+| File | Purpose |
+|------|---------|
+| `src/config/index.ts` | Business rules, employee constraints, API mode toggle |
+| `src/utils/salaryCalculator.ts` | Salary calculation logic (DO NOT MODIFY) |
+| `src/services/api.ts` | API integration with mock/real switching |
+| `src/contexts/` | Context providers for auth, employees, company |
+| `.env.development` | Environment configuration |
 
 ---
 
-## 🧪 Testing Scenarios
+## 🧪 Testing & Debugging
 
-### **Business Logic Tests**
-1. **Salary Calculation**: Verify Grade 6 base + 5000 increment formula
-2. **Transfer Process**: Test company account balance deduction
-3. **Insufficient Funds**: Validate top-up modal behavior
-4. **Grade Limits**: Check employee distribution enforcement
+### **API Mode Toggle**
+For offline development, toggle mock API mode in `src/config/index.ts`:
+```typescript
+USE_MOCK_API: true   // Mock data (no backend needed)
+USE_MOCK_API: false  // Real backend (http://localhost:20001)
+```
 
-### **UI/UX Tests**
-1. **Responsive Design**: Test on mobile/tablet/desktop
-2. **Form Validation**: Submit invalid data and verify error handling
-3. **Toast Notifications**: Verify positioning and auto-dismiss
-4. **Table Sorting**: Test all sortable columns
+### **Integration Testing**
+Use `src/utils/integrationTester.ts` for manual API verification.
 
----
-
-## 📈 Performance Metrics
-
-- **Frontend Bundle Size**: Optimized with Vite
-- **Frontend Load Time**: <2 seconds on modern browsers
-- **Mobile Performance**: Fully responsive design
-- **Accessibility**: ARIA labels and keyboard navigation
-- **Backend API**: Spring Boot with optimized JPA queries
-- **Database**: H2 (development) / MySQL (production)
+### **Debug Logging**
+- API interceptors log all requests/responses in development
+- Use browser DevTools Console for debugging
+- Check Network tab for API requests
 
 ---
 
-## 🔮 Future Enhancements
+## ⚠️ Critical Rules
 
-### **Integration Tasks (Next Sprint)**
-- Connect React frontend to Spring Boot API endpoints
-- Replace mock data with real database calls
-- Implement real JWT authentication flow
-- Add API error handling and retry logic
+1. **Never modify `salaryCalculator.ts`** - Salary calculation logic is fixed
+2. **Grade distribution must be validated** - Use `validateGradeDistribution()`
+3. **Employee ID must be 4 digits** - Validated by `validateEmployeeId()`
+4. **Always check API `success` field** - Before accessing response `data`
+5. **Use Context API only** - No Redux in this project
+
+---
+
+## 🤝 Contributing
+
+When making changes:
+1. Read the relevant documentation first
+2. Test with both mock and real API modes
+3. Preserve business logic and validations
+4. Keep TypeScript types in sync with API contracts
+5. Follow React best practices (Context API, no Redux)
+
+---
+
+## 📚 Related Documentation
+
+- [Root README](../README.md) - Project overview
+- [Quick Start Guide](../QUICK_START.md) - Developer quick reference
+- [AI Development Guide](../.github/copilot-instructions.md) - Coding patterns and guidelines
+
+---
+
+## 📝 Document History
+
+- **Latest Update**: May 2026
+- **Status**: ✅ Production Ready (90-95% complete)
 
 ### **Advanced Features**
 - Employee hierarchy management
